@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Tokenization &amp; Impact Calculator</title>
+
+  <style>
+      /* --- Base & Typography --- */
+      :root {
+        --bg-page: #f4f6f9;
+        --bg-card: #ffffff;
+        --bg-subtle: #f8fafc;
+        --border: #cbd5e1;
+        --text-main: #1e293b;
+        --text-muted: #475569;
+        --accent: #1d4ed8;
+        --accent-hover: #1e40af;
+        --danger-bg: #fef2f2;
+        --danger-border: #dc2626;
+        --danger-text: #991b1b;
+        --radius: 8px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.5;
+        color: var(--text-main);
+        background-color: var(--bg-page);
+        margin: 0;
+        padding: 1.25rem;
+      }
+
+      header, main, footer {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      header {
+        margin-bottom: 1.5rem;
+      }
+
+      header h1 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.75rem;
+        color: #0f172a;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--text-muted);
+      }
+
+      /* --- Sections as Clean Cards --- */
+      section {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      section h2 {
+        margin: 0 0 1rem 0;
+        font-size: 1.2rem;
+        border-bottom: 2px solid var(--bg-page);
+        padding-bottom: 0.4rem;
+        color: #0f172a;
+      }
+
+      section h3 {
+        margin: 1rem 0 0.5rem 0;
+        font-size: 1rem;
+        color: var(--text-main);
+      }
+
+      /* --- Form Controls & Focus Accessibility --- */
+      label {
+        display: inline-block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+        font-size: 0.95rem;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
+
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* --- Buttons --- */
+      button {
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.5rem 0.9rem;
+        border-radius: 6px;
+        border: 1px solid var(--accent);
+        background-color: var(--accent);
+        color: #ffffff;
+        cursor: pointer;
+        margin-right: 0.4rem;
+        margin-bottom: 0.4rem;
+      }
+
+      button:hover {
+        background-color: var(--accent-hover);
+      }
+
+      #btn-copy-prompt,
+      #btn-print-fallback {
+        background-color: #ffffff;
+        color: var(--accent);
+      }
+
+      #btn-copy-prompt:hover,
+      #btn-print-fallback:hover {
+        background-color: #eff6ff;
+      }
+
+      #copy-status {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #15803d;
+        margin-left: 0.25rem;
+      }
+
+      /* --- Section 1: Prompt, Response & Token Chips --- */
+      section[aria-labelledby="io-heading"] > div {
+        margin-bottom: 1rem;
+      }
+
+      #prompt-token-visual,
+      #response-token-visual {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.75rem;
+        min-height: 48px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+        line-height: 1.9;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      /* High-contrast cycling colors for JS-injected token chips */
+      .token-chip {
+        display: inline;
+        padding: 2px 3px;
+        margin: 0 1px;
+        border-radius: 3px;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        color: #0f172a;
+      }
+      .token-c0 { background-color: #dbeafe; } /* soft blue */
+      .token-c1 { background-color: #dcfce7; } /* soft green */
+      .token-c2 { background-color: #fef3c7; } /* soft amber */
+      .token-c3 { background-color: #f3e8ff; } /* soft purple */
+      .token-c4 { background-color: #ffe4e6; } /* soft rose */
+
+      /* --- Section 2: Settings Fieldsets (Responsive Grid) --- */
+      section[aria-labelledby="settings-heading"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+
+      section[aria-labelledby="settings-heading"] h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+      }
+
+      fieldset {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.9rem 1rem;
+        margin: 0;
+        background: var(--bg-subtle);
+      }
+
+      legend {
+        font-weight: 700;
+        font-size: 0.9rem;
+        padding: 0 0.4rem;
+        color: #0f172a;
+      }
+
+      fieldset > div {
+        margin-bottom: 0.75rem;
+      }
+
+      fieldset > div:last-child {
+        margin-bottom: 0;
+      }
+
+      #tier-description {
+        margin: 0.5rem 0 0 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      /* --- Section 3: 3-Tier Impact Ladder --- */
+      section[aria-labelledby="impact-heading"] {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }      
+
+      @media (max-width: 640px) {
+        section[aria-labelledby="impact-heading"] {
+          grid-template-columns: 1fr;
+        }
+      } 
+
+      section[aria-labelledby="impact-heading"] h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+      }
+
+      section[aria-labelledby="impact-heading"] article {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-top: 4px solid var(--accent);
+        border-radius: 6px;
+        padding: 1rem;
+      }
+
+      section[aria-labelledby="impact-heading"] article h3 {
+        margin-top: 0;
+        font-size: 1.05rem;
+      }
+
+      section[aria-labelledby="impact-heading"] ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      section[aria-labelledby="impact-heading"] li {
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.95rem;
+      }
+
+      section[aria-labelledby="impact-heading"] li:last-child {
+        border-bottom: none;
+      }
+
+      section[aria-labelledby="impact-heading"] li span {
+        display: block;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 0.1rem;
+      }
+
+      /* --- Section 4: Student Info (2-Column Grid) --- */
+      section[aria-labelledby="student-info-heading"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+
+      section[aria-labelledby="student-info-heading"] h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+      }
+
+
+      /* --- Section 5: Validation & Export --- */
+      #validation-message:not(:empty) {
+        background-color: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        color: var(--danger-text);
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      footer {
+        color: var(--text-muted);
+        text-align: center;
+        padding: 0.5rem 0 1.5rem 0;
+      }
+  </style>
+  
+</head>
+<body>
+
+  <header>
+    <h1>AI Tokenization &amp; Impact Calculator</h1>
+    <p>Explore how AI breaks text into tokens and estimate the financial, energy, and water footprint at scale.</p>
+  </header>
+
+  <main>
+
+    <!-- 1. Prompt & Response Input -->
+    <section aria-labelledby="io-heading">
+      <h2 id="io-heading">1. Prompt &amp; AI Response</h2>
+
+      <!-- Prompt Area -->
+      <div>
+        <div>
+          <label for="prompt-input">Prompt:</label>
+          <button type="button" id="btn-random-prompt">Load Random Prompt</button>
+          <button type="button" id="btn-copy-prompt">Copy Prompt</button>
+          <span id="copy-status" role="status" aria-live="polite"></span>
+        </div>
+        <textarea id="prompt-input" name="prompt-input" rows="5" placeholder="Click 'Load Random Prompt' or type your own prompt here..."></textarea>
+        <p>Prompt Tokens: <strong id="prompt-token-count">0</strong></p>
+      </div>
+
+      <!-- Response Area -->
+      <div>
+        <label for="response-input">AI Response:</label>
+        <textarea id="response-input" name="response-input" rows="8" placeholder="Paste the AI's response here..."></textarea>
+        <p>Response Tokens: <strong id="response-token-count">0</strong></p>
+      </div>
+
+      <!-- Combined Token Summary & Visualizer Controls -->
+      <div>
+        <p>Total Tokens (Prompt + Response): <strong id="total-token-count">0</strong></p>
+        <div>
+          <input type="checkbox" id="toggle-token-ids" name="toggle-token-ids">
+          <label for="toggle-token-ids">Show numeric Token IDs instead of text chunks</label>
+        </div>
+      </div>
+
+      <!-- Visual Token Breakdown Containers -->
+      <div>
+        <h3>Prompt Token Breakdown</h3>
+        <div id="prompt-token-visual" aria-live="polite">
+          <!-- Color-coded token chips will be injected here -->
+        </div>
+
+        <h3>Response Token Breakdown</h3>
+        <div id="response-token-visual" aria-live="polite">
+          <!-- Color-coded token chips will be injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Pricing, Model & Scale Settings -->
+    <section aria-labelledby="settings-heading">
+      <h2 id="settings-heading">2. Cost, Model &amp; Class Scale</h2>
+
+      <fieldset>
+        <legend>API Pricing (provided by instructor)</legend>
+        <div>
+          <label for="input-cost">Input Cost ($ per 1M tokens):</label>
+          <input type="number" id="input-cost" name="input-cost" step="0.01" min="0" value="2.50">
+        </div>
+        <div>
+          <label for="output-cost">Output Cost ($ per 1M tokens):</label>
+          <input type="number" id="output-cost" name="output-cost" step="0.01" min="0" value="10.00">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Energy &amp; Water Estimation Tier</legend>
+        <div>
+          <label for="model-tier">AI Model Tier:</label>
+          <select id="model-tier" name="model-tier" aria-describedby="tier-description">
+            <option value="small">Small / Fast Model</option>
+            <option value="standard" selected>Standard Frontier Model</option>
+            <option value="reasoning">Heavy Reasoning Model</option>
+          </select>
+          <p id="tier-description" aria-live="polite">
+            Typical baseline — everyday general-purpose AI models.
+          </p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Class &amp; Usage Scale</legend>
+        <div>
+          <label for="class-size">Number of Students in Your Class:</label>
+          <input type="number" id="class-size" name="class-size" min="1" step="1" value="24">
+        </div>
+        <div>
+          <label for="prompts-per-student">Prompts per Student:</label>
+          <input type="number" id="prompts-per-student" name="prompts-per-student" min="1" step="1" value="1">
+        </div>
+      </fieldset>
+    </section>
+
+    <!-- 3. The Impact Ladder  -->
+    <section aria-labelledby="impact-heading">
+      <h2 id="impact-heading">3. Estimated Impact</h2>
+
+      <!-- Tier 1: Just You -->
+      <article aria-labelledby="tier-you-heading">
+        <h3 id="tier-you-heading">Just You (1 Student)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="you-cost">$0.00000</strong></li>
+          <li>Electricity: <strong id="you-energy">0 Wh</strong> <span id="you-energy-equiv"></span></li>
+          <li>Water: <strong id="you-water">0 mL</strong> <span id="you-water-equiv"></span></li>
+        </ul>
+      </article>
+
+      <!-- Tier 2: Your Class -->
+      <article aria-labelledby="tier-class-heading">
+        <h3 id="tier-class-heading">Your Class (<span id="label-class-size">25</span> Students)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="class-cost">$0.00</strong></li>
+          <li>Electricity: <strong id="class-energy">0 Wh</strong> <span id="class-energy-equiv"></span></li>
+          <li>Water: <strong id="class-water">0 mL</strong> <span id="class-water-equiv"></span></li>
+        </ul>
+      </article>
+
+      <!-- Tier 3: Every U.S. College -->
+      <article aria-labelledby="tier-national-heading">
+        <h3 id="tier-national-heading">Every U.S. College (~3,800 Institutions)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="national-cost">$0.00</strong></li>
+          <li>Electricity: <strong id="national-energy">0 kWh</strong> <span id="national-energy-equiv"></span></li>
+          <li>Water: <strong id="national-water">0 L</strong> <span id="national-water-equiv"></span></li>
+        </ul>
+      </article>
+
+      <!-- Tier 4: Worldwide -->
+      <article aria-labelledby="tier-global-heading">
+        <h3 id="tier-global-heading">Worldwide (~1.2 Billion AI Users)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="global-cost">$0.00</strong></li>
+          <li>Electricity: <strong id="global-energy">0 kWh</strong> <span id="global-energy-equiv"></span></li>
+          <li>Water: <strong id="global-water">0 L</strong> <span id="global-water-equiv"></span></li>
+        </ul>
+      </article>      
+    </section>
+
+    <!-- 4. Student Information -->
+    <section aria-labelledby="student-info-heading">
+      <h2 id="student-info-heading">4. Student Information</h2>
+      <div>
+        <label for="student-name">Student Name:</label>
+        <input type="text" id="student-name" name="student-name" placeholder="Enter your full name" required>
+      </div>
+      <div>
+        <label for="section-id">Class Section:</label>
+        <input type="text" id="section-id" name="section-id" placeholder="Enter class section" required>
+      </div>
+    </section>
+
+    <!-- 5. Export / Submission -->
+    <section aria-labelledby="export-heading">
+      <h2 id="export-heading">5. Submit Your Assignment</h2>
+      <div id="validation-message" role="alert" aria-live="assertive"></div>
+      <div>
+        <button type="button" id="btn-download-pdf">Download PDF</button>
+        <button type="button" id="btn-print-fallback">Print</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      <small>
+        Baseline note: National estimates multiply your class total across 3,800 U.S. degree-granting colleges and universities (NCES IPEDS). Worldwide estimates model a single execution of your prompt across ~1.2 billion global AI users (reflecting conservative standalone AI app user estimates). Electricity and water figures are educational estimates based on published per-token inference benchmarks.
+      </small>
+    </p>
+  </footer>
+
+  <script type="module">
+    import { encode, decode } from 'https://esm.sh/gpt-tokenizer';  //Import tokenizer
+    import { jsPDF } from 'https://esm.sh/jspdf'; //import pdf functionality
+
+    const STARTER_PROMPTS = getRandomPrompts();
+
+    // --- Shared State  ---
+    const appState = {
+      promptTokens: 0,
+      responseTokens: 0
+    };
+
+    // --- DOM References ---
+    const promptInput = document.getElementById('prompt-input');
+    const responseInput = document.getElementById('response-input');
+    const promptCountEl = document.getElementById('prompt-token-count');
+    const responseCountEl = document.getElementById('response-token-count');
+    const totalCountEl = document.getElementById('total-token-count');
+    const promptVisualEl = document.getElementById('prompt-token-visual');
+    const responseVisualEl = document.getElementById('response-token-visual');
+    const toggleTokenIds = document.getElementById('toggle-token-ids');
+    const btnRandomPrompt = document.getElementById('btn-random-prompt');
+    const btnCopyPrompt = document.getElementById('btn-copy-prompt');
+    const copyStatusEl = document.getElementById('copy-status');
+    const modelTierSelect = document.getElementById('model-tier');
+    const tierDescriptionEl = document.getElementById('tier-description');
+    const inputCostEl = document.getElementById('input-cost');
+    const outputCostEl = document.getElementById('output-cost');
+    const classSizeEl = document.getElementById('class-size');
+    const promptsPerStudentEl = document.getElementById('prompts-per-student');
+    const labelClassSizeEl = document.getElementById('label-class-size');
+    const studentNameEl = document.getElementById('student-name');
+    const sectionIdEl = document.getElementById('section-id');
+    const validationMsgEl = document.getElementById('validation-message');
+    const btnDownloadPdf = document.getElementById('btn-download-pdf');
+    const btnPrintFallback = document.getElementById('btn-print-fallback');
+
+    // --- Event Listeners ---
+    promptInput.addEventListener('input', updateTokenization);
+    responseInput.addEventListener('input', updateTokenization);
+    toggleTokenIds.addEventListener('change', updateTokenization);
+    btnRandomPrompt.addEventListener('click', loadRandomPrompt);
+    btnCopyPrompt.addEventListener('click', copyPrompt);
+    modelTierSelect.addEventListener('change', updateTierDescription);
+    btnDownloadPdf.addEventListener('click', generatePDF);
+
+    btnPrintFallback.addEventListener('click', () => {
+      if (!validateAssignment()) return;
+      window.print();
+    });
+
+    // Listen for changes on all math inputs
+    [inputCostEl, outputCostEl, classSizeEl, promptsPerStudentEl].forEach(el => {
+      el.addEventListener('input', updateImpactLadder);
+    });
+
+    // --- Variables to manage random prompt ---
+    let lastPromptIndex = -1;
+    let copyStatusTimer = null;
+
+    // --- Model Tiers Config  ---
+    const MODEL_TIERS = setModels();
+
+    // --- For 4-Tier Impact Ladder Math ---
+    const US_COLLEGES = 3800;
+    const GLOBAL_AI_USERS = 1200000000;
+    const impactEls = getImpactElements();
+
+
+    // ----------------------------------------------------------------------------
+    //Initialize on page load
+    updateTierDescription();    
+    
+    // Run once on load in case the browser restores form values
+    updateTokenization();
+
+
+    // ----------------------------------------------------------------------------
+    // --- Core Tokenizer Function ---
+    function tokenizeText(text) {
+      if (!text) return [];
+      const ids = encode(text);
+      return ids.map(id => ({
+        id,
+        text: decode([id])
+      }));
+    }
+
+    // ----------------------------------------------------------------------------
+    // --- Render Color-Coded Chips ---
+    function renderTokens(container, tokens, showIds) {
+      container.innerHTML = '';
+
+      if (tokens.length === 0) {
+        return;
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      tokens.forEach((token, index) => {
+        const span = document.createElement('span');
+        span.className = `token-chip token-c${index % 5}`;
+        span.textContent = showIds ? String(token.id) : token.text;
+        span.title = `Token #${index + 1} | ID: ${token.id} | Text: ${JSON.stringify(token.text)}`;
+        fragment.appendChild(span);
+      });
+
+      container.appendChild(fragment);
+    }
+
+    // ----------------------------------------------------------------------------
+    // --- Master Update Handler ---
+    function updateTokenization() {
+      const showIds = toggleTokenIds.checked;
+
+      const promptTokens = tokenizeText(promptInput.value);
+      const responseTokens = tokenizeText(responseInput.value);
+
+      appState.promptTokens = promptTokens.length;
+      appState.responseTokens = responseTokens.length;
+
+      promptCountEl.textContent = appState.promptTokens.toLocaleString();
+      responseCountEl.textContent = appState.responseTokens.toLocaleString();
+      totalCountEl.textContent = (appState.promptTokens + appState.responseTokens).toLocaleString();
+
+      renderTokens(promptVisualEl, promptTokens, showIds);
+      renderTokens(responseVisualEl, responseTokens, showIds);
+
+      updateImpactLadder();
+    }
+
+    // ----------------------------------------------------------------------------
+    // --- Load a Random Prompt ---
+    function loadRandomPrompt() {
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * STARTER_PROMPTS.length);
+      } while (nextIndex === lastPromptIndex && STARTER_PROMPTS.length > 1);
+
+      lastPromptIndex = nextIndex;
+      promptInput.value = STARTER_PROMPTS[nextIndex];
+      updateTokenization();
+    }
+
+    // --- Copy the prompt to paste into the AI Context Window ---
+    async function copyPrompt() {
+      const text = promptInput.value.trim();
+      if (!text) {
+        showCopyStatus('Nothing to copy yet.');
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showCopyStatus('Copied!');
+      } catch (err) {
+        // Fallback for restricted Canvas iframes where Clipboard API is blocked
+        promptInput.select();
+        promptInput.setSelectionRange(0, promptInput.value.length);
+        const success = document.execCommand('copy');
+        showCopyStatus(success ? 'Copied!' : 'Press Ctrl+C / Cmd+C to copy.');
+      }
+    }
+
+    function showCopyStatus(message) {
+      copyStatusEl.textContent = message;
+      clearTimeout(copyStatusTimer);
+      copyStatusTimer = setTimeout(() => {
+        copyStatusEl.textContent = '';
+      }, 2500);
+    }
+
+    // ----------------------------------------------------------------------------
+    // --- Model Tiers Description Updater ---
+    function updateTierDescription() {
+      const selectedTier = MODEL_TIERS[modelTierSelect.value] || MODEL_TIERS.standard;
+      tierDescriptionEl.textContent = selectedTier.description;
+
+      updateImpactLadder();
+    }
+
+    // ----------------------------------------------------------------------------
+    // --- Master Math Calculation ---
+    function updateImpactLadder() {
+      const inputRate = Math.max(0, parseFloat(inputCostEl.value) || 0);
+      const outputRate = Math.max(0, parseFloat(outputCostEl.value) || 0);
+      const classSize = Math.max(1, parseInt(classSizeEl.value, 10) || 1);
+      const promptsPerStudent = Math.max(1, parseInt(promptsPerStudentEl.value, 10) || 1);
+      const tier = MODEL_TIERS[modelTierSelect.value] || MODEL_TIERS.standard;
+
+      labelClassSizeEl.textContent = classSize.toLocaleString();
+
+      // Base cost, energy, and water for ONE prompt + response
+      const baseCost =
+        (appState.promptTokens / 1_000_000) * inputRate +
+        (appState.responseTokens / 1_000_000) * outputRate;
+
+      const baseWh =
+        (appState.promptTokens * tier.whPerInputToken) +
+        (appState.responseTokens * tier.whPerOutputToken);
+
+      const baseMl = baseWh * tier.mlPerWh;
+
+      // Multipliers for the 4 tiers
+      const multipliers = {
+        you: promptsPerStudent,
+        class: classSize * promptsPerStudent,
+        national: classSize * promptsPerStudent * US_COLLEGES,
+        global: GLOBAL_AI_USERS
+      };
+
+      // Save formatted snapshot in appState for Stage 3 (PDF Export)
+      appState.impact = {};
+
+      ['you', 'class', 'national', 'global'].forEach(key => {
+        const mult = multipliers[key];
+        const cost = baseCost * mult;
+        const wh = baseWh * mult;
+        const ml = baseMl * mult;
+
+        const formatted = {
+          cost: formatMoney(cost, key === 'you'),
+          energy: formatWh(wh),
+          energyEquiv: getEnergyEquiv(wh),
+          water: formatWater(ml),
+          waterEquiv: getWaterEquiv(ml)
+        };
+
+        appState.impact[key] = formatted;
+
+        impactEls[key].cost.textContent = formatted.cost;
+        impactEls[key].energy.textContent = formatted.energy;
+        impactEls[key].energyEquiv.textContent = formatted.energyEquiv;
+        impactEls[key].water.textContent = formatted.water;
+        impactEls[key].waterEquiv.textContent = formatted.waterEquiv;
+      });
+    }
+
+    // ============================================================================
+    // ============================================================================
+    // --- Validation, PDF Export & Print Fallback ---
+
+    function validateAssignment() {
+      const missing = [];
+      let firstMissingEl = null;
+
+      const checks = [
+        { el: studentNameEl, label: 'Student Name', valid: studentNameEl.value.trim().length > 0 },
+        { el: sectionIdEl, label: 'Class Section', valid: sectionIdEl.value.trim().length > 0 },
+        { el: promptInput, label: 'Prompt', valid: promptInput.value.trim().length > 0 },
+        { el: responseInput, label: 'AI Response', valid: responseInput.value.trim().length > 0 },
+        { el: classSizeEl, label: 'Class Size', valid: parseInt(classSizeEl.value, 10) >= 1 }
+      ];
+
+      checks.forEach(item => {
+        if (!item.valid) {
+          missing.push(item.label);
+          if (!firstMissingEl) firstMissingEl = item.el;
+        }
+      });
+
+      if (missing.length > 0) {
+        validationMsgEl.textContent = `Please complete the following before exporting: ${missing.join(', ')}.`;
+        firstMissingEl.focus();
+        return false;
+      }
+
+      validationMsgEl.textContent = '';
+      return true;
+    }
+
+  function sanitizeForPdf(text) {
+      // return text;  //Testing
+      return text
+        .replace(/[\u2018\u2019]/g, "'")       // Smart single quotes
+        .replace(/[\u201C\u201D]/g, '"')       // Smart double quotes
+        .replace(/[\u2013\u2014]/g, '-')       // En/em dashes
+        .replace(/\u2026/g, '...')             // Ellipsis
+        .replace(/\u2022/g, '-')               // Bullet character
+        .replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, ''); // Strip emojis & unsupported Unicode
+    }
+
+    function generatePDF() {
+      if (!validateAssignment()) return;
+
+      const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 48;
+      const bottomLimit = pageHeight - margin - 18; // Leave room for footer
+      const contentWidth = pageWidth - margin * 2;
+      let y = margin;
+
+      function ensureSpace(neededHeight) {
+        if (y + neededHeight > bottomLimit) {
+          doc.addPage();
+          y = margin;
+        }
+      }
+
+      function writeWrappedText(text, fontSize = 10, lineHeight = 14) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(fontSize);
+        const cleanText = sanitizeForPdf(text);
+        const lines = doc.splitTextToSize(cleanText, contentWidth);
+        lines.forEach(line => {
+          ensureSpace(lineHeight);
+          doc.text(line, margin, y);
+          y += lineHeight;
+        });
+      }
+
+      // --- Header ---
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('AI Tokenization & Impact Assignment', margin, y);
+      y += 22;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10.5);
+      const studentName = sanitizeForPdf(studentNameEl.value.trim());
+      const sectionId = sanitizeForPdf(sectionIdEl.value.trim());
+      const dateStr = new Date().toLocaleString();
+      const tierLabel = (MODEL_TIERS[modelTierSelect.value] || MODEL_TIERS.standard).label;
+
+      doc.text(`Student: ${studentName}   |   Section: ${sectionId}`, margin, y);
+      y += 15;
+      doc.text(`Generated: ${dateStr}   |   Model Tier: ${tierLabel}`, margin, y);
+      y += 12;
+
+      doc.setDrawColor(180);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 18;
+
+      // --- The Math: Tokens, Pricing & Scale ---
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Token Counts & Settings', margin, y);
+      y += 16;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const totalTokens = appState.promptTokens + appState.responseTokens;
+      const inputRate = parseFloat(inputCostEl.value || 0).toFixed(2);
+      const outputRate = parseFloat(outputCostEl.value || 0).toFixed(2);
+      const classSize = parseInt(classSizeEl.value, 10) || 1;
+      const promptsPerStudent = parseInt(promptsPerStudentEl.value, 10) || 1;
+
+      doc.text(
+        `Prompt Tokens: ${appState.promptTokens.toLocaleString()}   |   Response Tokens: ${appState.responseTokens.toLocaleString()}   |   Total Tokens: ${totalTokens.toLocaleString()}`,
+        margin,
+        y
+      );
+      y += 15;
+      doc.text(
+        `Pricing: $${inputRate} / 1M input, $${outputRate} / 1M output   |   Class Size: ${classSize}   |   Prompts/Student: ${promptsPerStudent}`,
+        margin,
+        y
+      );
+      y += 22;
+
+      // --- The Math: 3-Tier Impact Ladder ---
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Estimated Impact', margin, y);
+      y += 16;
+
+      const tiers = [
+        { title: 'Just You (1 Student)', data: appState.impact.you },
+        { title: `Your Class (${classSize} Students)`, data: appState.impact.class },
+        { title: 'Every U.S. College (~3,800 Institutions)', data: appState.impact.national },
+        { title: 'Worldwide (~1.2 Billion AI Users)', data: appState.impact.global }
+      ];
+
+      tiers.forEach(tier => {
+        ensureSpace(58);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10.5);
+        doc.text(tier.title, margin, y);
+        y += 14;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9.5);
+        doc.text(`• Dollar Cost: ${tier.data.cost}`, margin + 12, y);
+        y += 13;
+        doc.text(`• Electricity: ${tier.data.energy} ${tier.data.energyEquiv}`, margin + 12, y);
+        y += 13;
+        doc.text(`• Water: ${tier.data.water} ${tier.data.waterEquiv}`, margin + 12, y);
+        y += 16;
+      });
+
+      // --- Baseline Assumptions Note ---
+// --- Baseline Assumptions Note ---
+      doc.setTextColor(100);
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+
+      const noteText =
+        'Note: National estimates multiply your class total across 3,800 U.S. degree-granting colleges and universities (NCES IPEDS). Worldwide estimates model a single execution of your prompt across ~1.2 billion global AI users (reflecting conservative standalone AI app user estimates). Electricity and water figures are educational estimates based on published per-token inference benchmarks.';
+
+      const noteLines = doc.splitTextToSize(noteText, contentWidth);
+      noteLines.forEach(line => {
+        ensureSpace(11);
+        doc.text(line, margin, y);
+        y += 11;
+      });
+      doc.setTextColor(0);
+      y += 8;
+
+      doc.setDrawColor(180);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 20;
+
+      // --- Bottom Half: Prompt & AI Response ---
+      ensureSpace(36);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Submitted Prompt', margin, y);
+      y += 16;
+      writeWrappedText(promptInput.value.trim(), 10, 14);
+      y += 16;
+
+      ensureSpace(36);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('AI Response', margin, y);
+      y += 16;
+      writeWrappedText(responseInput.value.trim(), 10, 14);
+
+      // --- Subtle Footer on Every Page ---
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(120);
+        doc.text(`${studentName}  |  ${sectionId}`, margin, pageHeight - 26);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 26, { align: 'right' });
+      }
+
+      // --- Save File ---
+      const safeName = studentName.replace(/[^a-z0-9]+/gi, '_').replace(/^_|_$/g, '');
+      doc.save(`AI_Token_Impact_${safeName || 'Student'}.pdf`);
+    }
+
+    // ============================================================================
+    // ============================================================================
+    // --- Formatting Helpers ---
+    function formatMoney(amount, highPrecision = false) {
+      if (amount === 0) return highPrecision ? '$0.00000' : '$0.00';
+      if (highPrecision && amount < 0.01) {
+        return '$' + amount.toFixed(5);
+      }
+      return '$' + amount.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatWh(wh) {
+      if (wh === 0) return '0 Wh';
+        if (wh >= 1_000_000_000) {
+          return (wh / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' GWh';
+        }
+        if (wh >= 1_000_000) {
+          return (wh / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' MWh';
+        }
+        if (wh >= 1_000) {
+          return (wh / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 }) + ' kWh';
+        }
+        const decimals = wh < 10 ? 2 : (wh < 100 ? 1 : 0);
+        return wh.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        }) + ' Wh';
+    }
+
+    // Isolated water formatter (easy to switch to gallons later if desired)
+    function formatWater(ml) {
+      if (ml === 0) return '0 mL';
+        if (ml >= 1_000) {
+          const liters = ml / 1_000;
+          const decimals = liters < 10 ? 2 : (liters < 100 ? 1 : 0);
+          return liters.toLocaleString(undefined, {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+          }) + ' L';
+        }
+        const decimals = ml < 10 ? 2 : (ml < 100 ? 1 : 0);
+        return ml.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+        }) + ' mL';
+    }
+
+    // --- Everyday US Equivalents ---
+    function getEnergyEquiv(wh) {
+      if (wh <= 0) return '';
+      if (wh < 15) {
+        const mins = (wh / 10) * 60; // 10W LED bulb
+        if (mins < 1) {
+          return `(~${Math.max(1, Math.round(mins * 60))} sec of a 10W LED bulb)`;
+        }
+        return `(~${mins.toFixed(1)} min of a 10W LED bulb)`;
+      }
+      if (wh < 1_200) {
+        const phones = wh / 15; // ~15 Wh per full smartphone charge
+        return `(~${phones.toFixed(1)} smartphone charges)`;
+      }
+      if (wh < 28_800) {
+        const homeHours = wh / 1_200; // ~1,200 Wh per hour for an average US home
+        return `(~${homeHours.toLocaleString(undefined, { maximumFractionDigits: 1 })} hrs of a US home's electricity)`;
+      }
+      if (wh < 10_512_000) {
+        const homeDays = wh / 28_800; // 24 hrs * 1,200 Wh
+        return `(~${homeDays.toLocaleString(undefined, { maximumFractionDigits: 1 })} days of a US home's electricity)`;
+      }
+      const homeYears = wh / 10_512_000; // 365 days * 28,800 Wh
+      return `(~${homeYears.toLocaleString(undefined, { maximumFractionDigits: 1 })} US homes powered for a year)`;
+    }
+
+    function getWaterEquiv(ml) {
+      if (ml <= 0) return '';
+      if (ml < 5) {
+        const drops = Math.max(1, Math.round(ml * 20)); // ~20 drops per mL
+        return `(~${drops} drops of water)`;
+      }
+      if (ml < 500) {
+        const tsp = ml / 4.92892;
+        return `(~${tsp.toFixed(1)} teaspoons)`;
+      }
+      if (ml < 3_785.41) {
+        const bottles = ml / 500; // Standard 16.9 oz (500 mL) bottle
+        return `(~${bottles.toFixed(1)} standard water bottles)`;
+      }
+      if (ml < 2_500_000_000) {
+        const gallons = ml / 3_785.41;
+        return `(~${gallons.toLocaleString(undefined, { maximumFractionDigits: 1 })} US gallons)`;
+      }
+      const pools = ml / 2_500_000_000; // ~2.5 million L per Olympic swimming pool
+      return `(~${pools.toLocaleString(undefined, { maximumFractionDigits: 1 })} Olympic swimming pools)`;
+    }
+
+    // ============================================================================
+    // ============================================================================
+    // --- Initialize Defaults ---
+
+    // --- Populate random prompts ---
+    function getRandomPrompts() {
+      return [
+        "Explain how a microwave heats food in 3 sentences, using an analogy a 10-year-old would understand.",
+        "Write a polite email to a professor asking for a 48-hour extension on a project due to a family emergency.",
+        "List 5 pros and 5 cons of electric vehicles for someone who lives in an apartment without a garage.",
+        "Summarize the plot of Romeo and Juliet as if it were a modern-day sports news broadcast.",
+        "Create a 3-day budget meal plan for a college student with only a mini-fridge and a microwave.",
+        "Explain the difference between weather and climate, and give two everyday examples of each.",
+        "Draft a 5-question multiple-choice quiz about basic internet safety, including an answer key.",
+        "Compare working from home versus working in an office from the perspective of a newly hired manager.",
+        "Explain why the sky is blue during the day and red at sunset in plain, everyday language.",
+        "Write a 150-word product description for a reusable water bottle that tracks how much water you drink.",
+        "Give 5 practical tips for managing test anxiety the night before a major exam.",
+        "Explain how credit scores work to a high school senior who is about to get their first credit card.",
+        "Create a 1-day sightseeing itinerary for a visitor who has never been to New York City and is on a tight budget.",
+        "Compare renting an apartment versus buying a home in a short bulleted list of 4 pros and 4 cons for each.",
+        "Write a short, friendly cover letter paragraph for a student applying to a summer internship at a local library.",
+        "Explain what inflation is using the price of a cup of coffee over the last 30 years.",
+        "Suggest 6 indoor hobbies that cost less than $25 to start and do not require a screen.",
+        "Describe how noise-canceling headphones work without using advanced physics jargon.",
+        "Write a polite text message to a roommate asking them to help keep the kitchen counter clean.",
+        "List 5 common myths about sleep and briefly explain the real science behind each one.",
+        "Create a 4-step checklist for fact-checking a viral news story on social media before sharing it.",
+        "Explain the difference between a debit card and a credit card in one short paragraph.",
+        "Write a 3-sentence movie pitch for a comedy about a dog who accidentally becomes the mayor of a small town.",
+        "Give 5 realistic ways a household can reduce its monthly electricity bill without buying new appliances.",
+        "Explain how vaccines train the immune system using a security guard or sports team analogy.",
+        "Draft a brief thank-you email to send after a job interview for a part-time retail position.",
+        "Compare paper textbooks and digital e-books for college students, listing 3 strengths of each.",
+        "Explain why airplanes leave white trails in the sky and whether they are actually smoke.",
+        "Create a 20-minute beginner bodyweight workout that requires no equipment and fits in a small bedroom.",
+        "Write a short dialogue between two friends debating whether pineapple belongs on pizza.",
+        "Explain the concept of compound interest using a simple example with $100.",
+        "List 5 essential items to keep in a car emergency kit for winter driving and explain why each matters.",
+        "Summarize the main causes of the American Revolution in 5 concise bullet points.",
+        "Give 4 practical strategies for taking better notes during a fast-paced college lecture.",
+        "Explain how GPS on a smartphone knows your exact location in 4 simple sentences.",
+        "Write a short, encouraging pep talk for someone who is nervous about giving their first public speech.",
+        "Compare solar energy and wind energy, highlighting two advantages and two challenges of each.",
+        "Create a simple weekly study schedule for a student taking 4 classes while working 15 hours a week.",
+        "Explain why onions make people cry when chopped and share 2 kitchen tricks to reduce it.",
+        "Describe the difference between a hurricane, a tornado, and a blizzard in one clear paragraph."
+      ];
+    }
+
+    // ----------------------------------------------------------------------------
+    // --- Model Tiers Config & Description Updater ---
+    function setModels() {
+      return {
+        small: {
+          label: 'Small / Fast Model',
+          description: 'Lower energy & water footprint — lightweight models built for speed and simple tasks.',
+          whPerInputToken: 0.00005,
+          whPerOutputToken: 0.0002,
+          mlPerWh: 3.0
+        },
+        standard: {
+          label: 'Standard Frontier Model',
+          description: 'Typical baseline — everyday general-purpose AI models.',
+          whPerInputToken: 0.00025,
+          whPerOutputToken: 0.0009,
+          mlPerWh: 3.0
+        },
+        reasoning: {
+          label: 'Heavy Reasoning Model',
+          description: 'Higher energy & water footprint — models that spend extra compute "thinking" before answering.',
+          whPerInputToken: 0.0005,
+          whPerOutputToken: 0.0030,
+          mlPerWh: 3.0
+        }
+      };
+    }
+
+    function getImpactElements() {
+        return {
+          you: {
+            cost: document.getElementById('you-cost'),
+            energy: document.getElementById('you-energy'),
+            energyEquiv: document.getElementById('you-energy-equiv'),
+            water: document.getElementById('you-water'),
+            waterEquiv: document.getElementById('you-water-equiv')
+          },
+          class: {
+            cost: document.getElementById('class-cost'),
+            energy: document.getElementById('class-energy'),
+            energyEquiv: document.getElementById('class-energy-equiv'),
+            water: document.getElementById('class-water'),
+            waterEquiv: document.getElementById('class-water-equiv')
+          },
+          national: {
+            cost: document.getElementById('national-cost'),
+            energy: document.getElementById('national-energy'),
+            energyEquiv: document.getElementById('national-energy-equiv'),
+            water: document.getElementById('national-water'),
+            waterEquiv: document.getElementById('national-water-equiv')
+          },
+          global: {
+            cost: document.getElementById('global-cost'),
+            energy: document.getElementById('global-energy'),
+            energyEquiv: document.getElementById('global-energy-equiv'),
+            water: document.getElementById('global-water'),
+            waterEquiv: document.getElementById('global-water-equiv')
+          }
+      };
+    }
+  </script>
+
+</body>
+</html>
