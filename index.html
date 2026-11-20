@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Tokenization &amp; Impact Calculator</title>
+
+  <style>
+      /* --- Base & Typography --- */
+      :root {
+        --bg-page: #f4f6f9;
+        --bg-card: #ffffff;
+        --bg-subtle: #f8fafc;
+        --border: #cbd5e1;
+        --text-main: #1e293b;
+        --text-muted: #475569;
+        --accent: #1d4ed8;
+        --accent-hover: #1e40af;
+        --danger-bg: #fef2f2;
+        --danger-border: #dc2626;
+        --danger-text: #991b1b;
+        --radius: 8px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.5;
+        color: var(--text-main);
+        background-color: var(--bg-page);
+        margin: 0;
+        padding: 1.25rem;
+      }
+
+      header, main, footer {
+        max-width: 960px;
+        margin: 0 auto;
+      }
+
+      header {
+        margin-bottom: 1.5rem;
+      }
+
+      header h1 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.75rem;
+        color: #0f172a;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--text-muted);
+      }
+
+      /* --- Sections as Clean Cards --- */
+      section {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      }
+
+      section h2 {
+        margin: 0 0 1rem 0;
+        font-size: 1.2rem;
+        border-bottom: 2px solid var(--bg-page);
+        padding-bottom: 0.4rem;
+        color: #0f172a;
+      }
+
+      section h3 {
+        margin: 1rem 0 0.5rem 0;
+        font-size: 1rem;
+        color: var(--text-main);
+      }
+
+      /* --- Form Controls & Focus Accessibility --- */
+      label {
+        display: inline-block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+        font-size: 0.95rem;
+      }
+
+      input[type="text"],
+      input[type="number"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: var(--text-main);
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 90px;
+      }
+
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* --- Buttons --- */
+      button {
+        font-family: inherit;
+        font-size: 0.9rem;
+        font-weight: 600;
+        padding: 0.5rem 0.9rem;
+        border-radius: 6px;
+        border: 1px solid var(--accent);
+        background-color: var(--accent);
+        color: #ffffff;
+        cursor: pointer;
+        margin-right: 0.4rem;
+        margin-bottom: 0.4rem;
+      }
+
+      button:hover {
+        background-color: var(--accent-hover);
+      }
+
+      #btn-copy-prompt,
+      #btn-print-fallback {
+        background-color: #ffffff;
+        color: var(--accent);
+      }
+
+      #btn-copy-prompt:hover,
+      #btn-print-fallback:hover {
+        background-color: #eff6ff;
+      }
+
+      #copy-status {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #15803d;
+        margin-left: 0.25rem;
+      }
+
+      /* --- Section 1: Prompt, Response & Token Chips --- */
+      section[aria-labelledby="io-heading"] > div {
+        margin-bottom: 1rem;
+      }
+
+      #prompt-token-visual,
+      #response-token-visual {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.75rem;
+        min-height: 48px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9rem;
+        line-height: 1.9;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      /* High-contrast cycling colors for JS-injected token chips */
+      .token-chip {
+        display: inline;
+        padding: 2px 3px;
+        margin: 0 1px;
+        border-radius: 3px;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        color: #0f172a;
+      }
+      .token-c0 { background-color: #dbeafe; } /* soft blue */
+      .token-c1 { background-color: #dcfce7; } /* soft green */
+      .token-c2 { background-color: #fef3c7; } /* soft amber */
+      .token-c3 { background-color: #f3e8ff; } /* soft purple */
+      .token-c4 { background-color: #ffe4e6; } /* soft rose */
+
+      /* --- Section 2: Settings Fieldsets (Responsive Grid) --- */
+      section[aria-labelledby="settings-heading"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+
+      section[aria-labelledby="settings-heading"] h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+      }
+
+      fieldset {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.9rem 1rem;
+        margin: 0;
+        background: var(--bg-subtle);
+      }
+
+      legend {
+        font-weight: 700;
+        font-size: 0.9rem;
+        padding: 0 0.4rem;
+        color: #0f172a;
+      }
+
+      fieldset > div {
+        margin-bottom: 0.75rem;
+      }
+
+      fieldset > div:last-child {
+        margin-bottom: 0;
+      }
+
+      #tier-description {
+        margin: 0.5rem 0 0 0;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+      }
+
+      /* --- Section 3: 3-Tier Impact Ladder --- */
+      section[aria-labelledby="impact-heading"] {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }      
+
+      @media (max-width: 640px) {
+        section[aria-labelledby="impact-heading"] {
+          grid-template-columns: 1fr;
+        }
+      } 
+
+      section[aria-labelledby="impact-heading"] h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+      }
+
+      section[aria-labelledby="impact-heading"] article {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-top: 4px solid var(--accent);
+        border-radius: 6px;
+        padding: 1rem;
+      }
+
+      section[aria-labelledby="impact-heading"] article h3 {
+        margin-top: 0;
+        font-size: 1.05rem;
+      }
+
+      section[aria-labelledby="impact-heading"] ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      section[aria-labelledby="impact-heading"] li {
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.95rem;
+      }
+
+      section[aria-labelledby="impact-heading"] li:last-child {
+        border-bottom: none;
+      }
+
+      section[aria-labelledby="impact-heading"] li span {
+        display: block;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-top: 0.1rem;
+      }
+
+      /* --- Section 4: Student Info (2-Column Grid) --- */
+      section[aria-labelledby="student-info-heading"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+      }
+
+      section[aria-labelledby="student-info-heading"] h2 {
+        grid-column: 1 / -1;
+        margin-bottom: 0.25rem;
+      }
+
+
+      /* --- Section 5: Validation & Export --- */
+      #validation-message:not(:empty) {
+        background-color: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        color: var(--danger-text);
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      footer {
+        color: var(--text-muted);
+        text-align: center;
+        padding: 0.5rem 0 1.5rem 0;
+      }
+  </style>
+  
+</head>
+<body>
+
+  <header>
+    <h1>AI Tokenization &amp; Impact Calculator</h1>
+    <p>Explore how AI breaks text into tokens and estimate the financial, energy, and water footprint at scale.</p>
+  </header>
+
+  <main>
+
+    <!-- 1. Prompt & Response Input -->
+    <section aria-labelledby="io-heading">
+      <h2 id="io-heading">1. Prompt &amp; AI Response</h2>
+
+      <!-- Prompt Area -->
+      <div>
+        <div>
+          <label for="prompt-input">Prompt:</label>
+          <button type="button" id="btn-random-prompt">Load Random Prompt</button>
+          <button type="button" id="btn-copy-prompt">Copy Prompt</button>
+          <span id="copy-status" role="status" aria-live="polite"></span>
+        </div>
+        <textarea id="prompt-input" name="prompt-input" rows="5" placeholder="Click 'Load Random Prompt' or type your own prompt here..."></textarea>
+        <p>Prompt Tokens: <strong id="prompt-token-count">0</strong></p>
+      </div>
+
+      <!-- Response Area -->
+      <div>
+        <label for="response-input">AI Response:</label>
+        <textarea id="response-input" name="response-input" rows="8" placeholder="Paste the AI's response here..."></textarea>
+        <p>Response Tokens: <strong id="response-token-count">0</strong></p>
+      </div>
+
+      <!-- Combined Token Summary & Visualizer Controls -->
+      <div>
+        <p>Total Tokens (Prompt + Response): <strong id="total-token-count">0</strong></p>
+        <div>
+          <input type="checkbox" id="toggle-token-ids" name="toggle-token-ids">
+          <label for="toggle-token-ids">Show numeric Token IDs instead of text chunks</label>
+        </div>
+      </div>
+
+      <!-- Visual Token Breakdown Containers -->
+      <div>
+        <h3>Prompt Token Breakdown</h3>
+        <div id="prompt-token-visual" aria-live="polite">
+          <!-- Color-coded token chips will be injected here -->
+        </div>
+
+        <h3>Response Token Breakdown</h3>
+        <div id="response-token-visual" aria-live="polite">
+          <!-- Color-coded token chips will be injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Pricing, Model & Scale Settings -->
+    <section aria-labelledby="settings-heading">
+      <h2 id="settings-heading">2. Cost, Model &amp; Class Scale</h2>
+
+      <fieldset>
+        <legend>API Pricing (provided by instructor)</legend>
+        <div>
+          <label for="input-cost">Input Cost ($ per 1M tokens):</label>
+          <input type="number" id="input-cost" name="input-cost" step="0.01" min="0" value="2.50">
+        </div>
+        <div>
+          <label for="output-cost">Output Cost ($ per 1M tokens):</label>
+          <input type="number" id="output-cost" name="output-cost" step="0.01" min="0" value="10.00">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Energy &amp; Water Estimation Tier</legend>
+        <div>
+          <label for="model-tier">AI Model Tier:</label>
+          <select id="model-tier" name="model-tier" aria-describedby="tier-description">
+            <option value="small">Small / Fast Model</option>
+            <option value="standard" selected>Standard Frontier Model</option>
+            <option value="reasoning">Heavy Reasoning Model</option>
+          </select>
+          <p id="tier-description" aria-live="polite">
+            Typical baseline — everyday general-purpose AI models.
+          </p>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Class &amp; Usage Scale</legend>
+        <div>
+          <label for="class-size">Number of Students in Your Class:</label>
+          <input type="number" id="class-size" name="class-size" min="1" step="1" value="24">
+        </div>
+        <div>
+          <label for="prompts-per-student">Prompts per Student:</label>
+          <input type="number" id="prompts-per-student" name="prompts-per-student" min="1" step="1" value="1">
+        </div>
+      </fieldset>
+    </section>
+
+    <!-- 3. The Impact Ladder  -->
+    <section aria-labelledby="impact-heading">
+      <h2 id="impact-heading">3. Estimated Impact</h2>
+
+      <!-- Tier 1: Just You -->
+      <article aria-labelledby="tier-you-heading">
+        <h3 id="tier-you-heading">Just You (1 Student)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="you-cost">$0.00000</strong></li>
+          <li>Electricity: <strong id="you-energy">0 Wh</strong> <span id="you-energy-equiv"></span></li>
+          <li>Water: <strong id="you-water">0 mL</strong> <span id="you-water-equiv"></span></li>
+        </ul>
+      </article>
+
+      <!-- Tier 2: Your Class -->
+      <article aria-labelledby="tier-class-heading">
+        <h3 id="tier-class-heading">Your Class (<span id="label-class-size">25</span> Students)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="class-cost">$0.00</strong></li>
+          <li>Electricity: <strong id="class-energy">0 Wh</strong> <span id="class-energy-equiv"></span></li>
+          <li>Water: <strong id="class-water">0 mL</strong> <span id="class-water-equiv"></span></li>
+        </ul>
+      </article>
+
+      <!-- Tier 3: Every U.S. College -->
+      <article aria-labelledby="tier-national-heading">
+        <h3 id="tier-national-heading">Every U.S. College (~3,800 Institutions)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="national-cost">$0.00</strong></li>
+          <li>Electricity: <strong id="national-energy">0 kWh</strong> <span id="national-energy-equiv"></span></li>
+          <li>Water: <strong id="national-water">0 L</strong> <span id="national-water-equiv"></span></li>
+        </ul>
+      </article>
+
+      <!-- Tier 4: Worldwide -->
+      <article aria-labelledby="tier-global-heading">
+        <h3 id="tier-global-heading">Worldwide (~1.2 Billion AI Users)</h3>
+        <ul>
+          <li>Dollar Cost: <strong id="global-cost">$0.00</strong></li>
+          <li>Electricity: <strong id="global-energy">0 kWh</strong> <span id="global-energy-equiv"></span></li>
+          <li>Water: <strong id="global-water">0 L</strong> <span id="global-water-equiv"></span></li>
+        </ul>
+      </article>      
+    </section>
+
+    <!-- 4. Student Information -->
+    <section aria-labelledby="student-info-heading">
+      <h2 id="student-info-heading">4. Student Information</h2>
+      <div>
+        <label for="student-name">Student Name:</label>
+        <input type="text" id="student-name" name="student-name" placeholder="Enter your full name" required>
+      </div>
+      <div>
+        <label for="section-id">Class Section:</label>
+        <input type="text" id="section-id" name="section-id" placeholder="Enter class section" required>
+      </div>
+    </section>
+
+    <!-- 5. Export / Submission -->
+    <section aria-labelledby="export-heading">
+      <h2 id="export-heading">5. Submit Your Assignment</h2>
+      <div id="validation-message" role="alert" aria-live="assertive"></div>
+      <div>
+        <button type="button" id="btn-download-pdf">Download PDF</button>
+        <button type="button" id="btn-print-fallback">Print</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      <small>
+        Baseline note: National estimates multiply your class total across 3,800 U.S. degree-granting colleges and universities (NCES IPEDS). Worldwide estimates model a single execution of your prompt across ~1.2 billion global AI users (reflecting conservative standalone AI app user estimates). Electricity and water figures are educational estimates based on published per-token inference benchmarks.
+      </small>
+    </p>
+  </footer>
+
+  <script type="module">
+    function _0x1c26(){const _0x45bef4=['\x20Wh','\x20\x20|\x20\x20','print','\x20sec\x20of\x20a\x2010W\x20LED\x20bulb)','replace','forEach','prompts-per-student','value','Every\x20U.S.\x20College\x20(~3,800\x20Institutions)','Token\x20Counts\x20&\x20Settings','text','setSelectionRange','pageSize','join','getWidth','toFixed','splitTextToSize','concat','Describe\x20the\x20difference\x20between\x20a\x20hurricane,\x20a\x20tornado,\x20and\x20a\x20blizzard\x20in\x20one\x20clear\x20paragraph.','\x20teaspoons)','impact','2lHeRju','energy','Class\x20Section','0\x20mL','setFontSize','setTextColor','\x20GWh','1969265rNlRFA','clipboard','Copied!','Give\x205\x20realistic\x20ways\x20a\x20household\x20can\x20reduce\x20its\x20monthly\x20electricity\x20bill\x20without\x20buying\x20new\x20appliances.','Explain\x20how\x20credit\x20scores\x20work\x20to\x20a\x20high\x20school\x20senior\x20who\x20is\x20about\x20to\x20get\x20their\x20first\x20credit\x20card.','\x20\x20\x20|\x20\x20\x20Total\x20Tokens:\x20','Give\x205\x20practical\x20tips\x20for\x20managing\x20test\x20anxiety\x20the\x20night\x20before\x20a\x20major\x20exam.','Suggest\x206\x20indoor\x20hobbies\x20that\x20cost\x20less\x20than\x20$25\x20to\x20start\x20and\x20do\x20not\x20require\x20a\x20screen.','class-water-equiv','Create\x20a\x201-day\x20sightseeing\x20itinerary\x20for\x20a\x20visitor\x20who\x20has\x20never\x20been\x20to\x20New\x20York\x20City\x20and\x20is\x20on\x20a\x20tight\x20budget.','responseTokens','Write\x20a\x203-sentence\x20movie\x20pitch\x20for\x20a\x20comedy\x20about\x20a\x20dog\x20who\x20accidentally\x20becomes\x20the\x20mayor\x20of\x20a\x20small\x20town.','Create\x20a\x203-day\x20budget\x20meal\x20plan\x20for\x20a\x20college\x20student\x20with\x20only\x20a\x20mini-fridge\x20and\x20a\x20microwave.','description','Student','68387LHqFBK','title','\x20kWh','AI\x20Tokenization\x20&\x20Impact\x20Assignment','•\x20Dollar\x20Cost:\x20','Page\x20','11wPGscB','Small\x20/\x20Fast\x20Model','round','model-tier','valid','internal','4dwrgBH','Student\x20Name','tier-description','trim','right','addEventListener','Heavy\x20Reasoning\x20Model','you-water','List\x205\x20pros\x20and\x205\x20cons\x20of\x20electric\x20vehicles\x20for\x20someone\x20who\x20lives\x20in\x20an\x20apartment\x20without\x20a\x20garage.','random','Prompt\x20Tokens:\x20','Generated:\x20','Explain\x20why\x20onions\x20make\x20people\x20cry\x20when\x20chopped\x20and\x20share\x202\x20kitchen\x20tricks\x20to\x20reduce\x20it.','normal','•\x20Electricity:\x20','\x20Olympic\x20swimming\x20pools)','\x20\x20\x20|\x20\x20\x20Model\x20Tier:\x20','national-water-equiv','whPerInputToken','class-energy','map','226794dhJsEq','national-water','\x20US\x20gallons)','Press\x20Ctrl+C\x20/\x20Cmd+C\x20to\x20copy.','token-chip\x20token-c','Explain\x20why\x20the\x20sky\x20is\x20blue\x20during\x20the\x20day\x20and\x20red\x20at\x20sunset\x20in\x20plain,\x20everyday\x20language.','\x20|\x20Text:\x20','data','output-cost','student-name','you','national','Write\x20a\x20150-word\x20product\x20description\x20for\x20a\x20reusable\x20water\x20bottle\x20that\x20tracks\x20how\x20much\x20water\x20you\x20drink.','focus','\x20\x20\x20|\x20\x20\x20Section:\x20','setDrawColor','global','save','italic','Compare\x20paper\x20textbooks\x20and\x20digital\x20e-books\x20for\x20college\x20students,\x20listing\x203\x20strengths\x20of\x20each.','\x20US\x20homes\x20powered\x20for\x20a\x20year)','btn-print-fallback','3811158zVgkMH','setPage','standard','section-id','className','Class\x20Size','energyEquiv','Describe\x20how\x20noise-canceling\x20headphones\x20work\x20without\x20using\x20advanced\x20physics\x20jargon.','\x20of\x20','Higher\x20energy\x20&\x20water\x20footprint\x20—\x20models\x20that\x20spend\x20extra\x20compute\x20\x22thinking\x22\x20before\x20answering.','total-token-count','\x20mL','change','label-class-size','2727620gtYZWQ','Note:\x20National\x20estimates\x20multiply\x20your\x20class\x20total\x20across\x203,800\x20U.S.\x20degree-granting\x20colleges\x20and\x20universities\x20(NCES\x20IPEDS).\x20Worldwide\x20estimates\x20model\x20a\x20single\x20execution\x20of\x20your\x20prompt\x20across\x20~1.2\x20billion\x20global\x20AI\x20users\x20(reflecting\x20conservative\x20standalone\x20AI\x20app\x20user\x20estimates).\x20Electricity\x20and\x20water\x20figures\x20are\x20educational\x20estimates\x20based\x20on\x20published\x20per-token\x20inference\x20benchmarks.','Explain\x20the\x20difference\x20between\x20weather\x20and\x20climate,\x20and\x20give\x20two\x20everyday\x20examples\x20of\x20each.','whPerOutputToken','0\x20Wh','Submitted\x20Prompt','Prompt','writeText','getNumberOfPages','validation-message','national-energy','433698sOZGIf','Write\x20a\x20short,\x20friendly\x20cover\x20letter\x20paragraph\x20for\x20a\x20student\x20applying\x20to\x20a\x20summer\x20internship\x20at\x20a\x20local\x20library.','Explain\x20how\x20a\x20microwave\x20heats\x20food\x20in\x203\x20sentences,\x20using\x20an\x20analogy\x20a\x2010-year-old\x20would\x20understand.','class-size','5285904chCBak','259RDRCjF','global-water-equiv','Draft\x20a\x205-question\x20multiple-choice\x20quiz\x20about\x20basic\x20internet\x20safety,\x20including\x20an\x20answer\x20key.','toggle-token-ids','helvetica','global-cost','btn-download-pdf','copy-status','response-token-visual','click','addPage','Estimated\x20Impact','\x20days\x20of\x20a\x20US\x20home\x27s\x20electricity)','promptTokens','\x20Students)','prompt-input','input-cost','Compare\x20working\x20from\x20home\x20versus\x20working\x20in\x20an\x20office\x20from\x20the\x20perspective\x20of\x20a\x20newly\x20hired\x20manager.','length','•\x20Water:\x20','getElementById','copy','Standard\x20Frontier\x20Model','you-energy','label','Explain\x20the\x20difference\x20between\x20a\x20debit\x20card\x20and\x20a\x20credit\x20card\x20in\x20one\x20short\x20paragraph.','national-energy-equiv','response-input','Token\x20#','Create\x20a\x20simple\x20weekly\x20study\x20schedule\x20for\x20a\x20student\x20taking\x204\x20classes\x20while\x20working\x2015\x20hours\x20a\x20week.','Create\x20a\x2020-minute\x20beginner\x20bodyweight\x20workout\x20that\x20requires\x20no\x20equipment\x20and\x20fits\x20in\x20a\x20small\x20bedroom.','checked','class-cost','bold','Just\x20You\x20(1\x20Student)','you-energy-equiv','innerHTML','line','waterEquiv','letter','textContent','max','setFont','Draft\x20a\x20brief\x20thank-you\x20email\x20to\x20send\x20after\x20a\x20job\x20interview\x20for\x20a\x20part-time\x20retail\x20position.','prompt-token-visual','Explain\x20what\x20inflation\x20is\x20using\x20the\x20price\x20of\x20a\x20cup\x20of\x20coffee\x20over\x20the\x20last\x2030\x20years.','response-token-count','cost','class','water','execCommand','toLocaleString','Summarize\x20the\x20plot\x20of\x20Romeo\x20and\x20Juliet\x20as\x20if\x20it\x20were\x20a\x20modern-day\x20sports\x20news\x20broadcast.','Typical\x20baseline\x20—\x20everyday\x20general-purpose\x20AI\x20models.','\x20\x20\x20|\x20\x20\x20Response\x20Tokens:\x20','prompt-token-count','class-energy-equiv','push','Nothing\x20to\x20copy\x20yet.','Pricing:\x20$','Explain\x20how\x20vaccines\x20train\x20the\x20immune\x20system\x20using\x20a\x20security\x20guard\x20or\x20sports\x20team\x20analogy.','\x20hrs\x20of\x20a\x20US\x20home\x27s\x20electricity)','Write\x20a\x20short\x20dialogue\x20between\x20two\x20friends\x20debating\x20whether\x20pineapple\x20belongs\x20on\x20pizza.','...','\x20drops\x20of\x20water)','createDocumentFragment','AI\x20Response','Please\x20complete\x20the\x20following\x20before\x20exporting:\x20','btn-copy-prompt','Explain\x20why\x20airplanes\x20leave\x20white\x20trails\x20in\x20the\x20sky\x20and\x20whether\x20they\x20are\x20actually\x20smoke.','floor','\x20/\x201M\x20input,\x20$','Summarize\x20the\x20main\x20causes\x20of\x20the\x20American\x20Revolution\x20in\x205\x20concise\x20bullet\x20points.'];_0x1c26=function(){return _0x45bef4;};return _0x1c26();}const _0x5d14dc=_0x1b3c;(function(_0x1fe49e,_0x32f9c2){const _0x9f2015=_0x1b3c,_0x4cbea7=_0x1fe49e();while(!![]){try{const _0x5c9d86=-parseInt(_0x9f2015(0x1ae))/0x1+parseInt(_0x9f2015(0x198))/0x2*(-parseInt(_0x9f2015(0x1fe))/0x3)+-parseInt(_0x9f2015(0x1ba))/0x4*(parseInt(_0x9f2015(0x19f))/0x5)+-parseInt(_0x9f2015(0x1cf))/0x6*(-parseInt(_0x9f2015(0x203))/0x7)+parseInt(_0x9f2015(0x202))/0x8+-parseInt(_0x9f2015(0x1e5))/0x9+-parseInt(_0x9f2015(0x1f3))/0xa*(parseInt(_0x9f2015(0x1b4))/0xb);if(_0x5c9d86===_0x32f9c2)break;else _0x4cbea7['push'](_0x4cbea7['shift']());}catch(_0xf8260b){_0x4cbea7['push'](_0x4cbea7['shift']());}}}(_0x1c26,0xb8a2f));import{encode,decode}from'https://esm.sh/gpt-tokenizer';import{jsPDF}from'https://esm.sh/jspdf';const STARTER_PROMPTS=getRandomPrompts(),appState={'promptTokens':0x0,'responseTokens':0x0},promptInput=document[_0x5d14dc(0x217)](_0x5d14dc(0x212)),responseInput=document[_0x5d14dc(0x217)](_0x5d14dc(0x21e)),promptCountEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x23a)),responseCountEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x231)),totalCountEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x1ef)),promptVisualEl=document['getElementById'](_0x5d14dc(0x22f)),responseVisualEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x20b)),toggleTokenIds=document[_0x5d14dc(0x217)](_0x5d14dc(0x206)),btnRandomPrompt=document[_0x5d14dc(0x217)]('btn-random-prompt'),btnCopyPrompt=document['getElementById'](_0x5d14dc(0x17e)),copyStatusEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x20a)),modelTierSelect=document[_0x5d14dc(0x217)](_0x5d14dc(0x1b7)),tierDescriptionEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x1bc)),inputCostEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x213)),outputCostEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x1d7)),classSizeEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x201)),promptsPerStudentEl=document['getElementById'](_0x5d14dc(0x189)),labelClassSizeEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x1f2)),studentNameEl=document[_0x5d14dc(0x217)](_0x5d14dc(0x1d8)),sectionIdEl=document['getElementById'](_0x5d14dc(0x1e8)),validationMsgEl=document['getElementById'](_0x5d14dc(0x1fc)),btnDownloadPdf=document[_0x5d14dc(0x217)](_0x5d14dc(0x209)),btnPrintFallback=document['getElementById'](_0x5d14dc(0x1e4));promptInput[_0x5d14dc(0x1bf)]('input',updateTokenization),responseInput[_0x5d14dc(0x1bf)]('input',updateTokenization),toggleTokenIds[_0x5d14dc(0x1bf)](_0x5d14dc(0x1f1),updateTokenization),btnRandomPrompt['addEventListener']('click',loadRandomPrompt),btnCopyPrompt[_0x5d14dc(0x1bf)](_0x5d14dc(0x20c),copyPrompt),modelTierSelect[_0x5d14dc(0x1bf)]('change',updateTierDescription),btnDownloadPdf['addEventListener']('click',generatePDF),btnPrintFallback[_0x5d14dc(0x1bf)](_0x5d14dc(0x20c),()=>{const _0x29481b=_0x5d14dc;if(!validateAssignment())return;window[_0x29481b(0x185)]();}),[inputCostEl,outputCostEl,classSizeEl,promptsPerStudentEl][_0x5d14dc(0x188)](_0x55927c=>{const _0x1bc94a=_0x5d14dc;_0x55927c[_0x1bc94a(0x1bf)]('input',updateImpactLadder);});let lastPromptIndex=-0x1,copyStatusTimer=null;const MODEL_TIERS=setModels(),US_COLLEGES=0xed8,GLOBAL_AI_USERS=0x47868c00,impactEls=getImpactElements();updateTierDescription(),updateTokenization();function tokenizeText(_0x358425){const _0xb41fc6=_0x5d14dc;if(!_0x358425)return[];const _0x4a7091=encode(_0x358425);return _0x4a7091[_0xb41fc6(0x1ce)](_0x2cf529=>({'id':_0x2cf529,'text':decode([_0x2cf529])}));}function renderTokens(_0x42a593,_0x173a43,_0x11e627){const _0x144021=_0x5d14dc;_0x42a593[_0x144021(0x227)]='';if(_0x173a43[_0x144021(0x215)]===0x0)return;const _0xeec066=document[_0x144021(0x17b)]();_0x173a43[_0x144021(0x188)]((_0x22db58,_0x426ab3)=>{const _0x552299=_0x144021,_0x43d507=document['createElement']('span');_0x43d507[_0x552299(0x1e9)]=_0x552299(0x1d3)['concat'](_0x426ab3%0x5),_0x43d507['textContent']=_0x11e627?String(_0x22db58['id']):_0x22db58['text'],_0x43d507['title']=_0x552299(0x21f)[_0x552299(0x194)](_0x426ab3+0x1,'\x20|\x20ID:\x20')[_0x552299(0x194)](_0x22db58['id'],_0x552299(0x1d5))[_0x552299(0x194)](JSON['stringify'](_0x22db58[_0x552299(0x18d)])),_0xeec066['appendChild'](_0x43d507);}),_0x42a593['appendChild'](_0xeec066);}function updateTokenization(){const _0x1578be=_0x5d14dc,_0x2d0e40=toggleTokenIds[_0x1578be(0x222)],_0x47e4ac=tokenizeText(promptInput['value']),_0x1275e6=tokenizeText(responseInput[_0x1578be(0x18a)]);appState[_0x1578be(0x210)]=_0x47e4ac[_0x1578be(0x215)],appState[_0x1578be(0x1a9)]=_0x1275e6[_0x1578be(0x215)],promptCountEl[_0x1578be(0x22b)]=appState[_0x1578be(0x210)]['toLocaleString'](),responseCountEl['textContent']=appState[_0x1578be(0x1a9)]['toLocaleString'](),totalCountEl[_0x1578be(0x22b)]=(appState['promptTokens']+appState[_0x1578be(0x1a9)])[_0x1578be(0x236)](),renderTokens(promptVisualEl,_0x47e4ac,_0x2d0e40),renderTokens(responseVisualEl,_0x1275e6,_0x2d0e40),updateImpactLadder();}function loadRandomPrompt(){const _0x4c689d=_0x5d14dc;let _0x779573;do{_0x779573=Math[_0x4c689d(0x180)](Math[_0x4c689d(0x1c3)]()*STARTER_PROMPTS[_0x4c689d(0x215)]);}while(_0x779573===lastPromptIndex&&STARTER_PROMPTS['length']>0x1);lastPromptIndex=_0x779573,promptInput[_0x4c689d(0x18a)]=STARTER_PROMPTS[_0x779573],updateTokenization();}async function copyPrompt(){const _0x18d17a=_0x5d14dc,_0x25cd24=promptInput['value'][_0x18d17a(0x1bd)]();if(!_0x25cd24){showCopyStatus(_0x18d17a(0x174));return;}try{await navigator[_0x18d17a(0x1a0)][_0x18d17a(0x1fa)](_0x25cd24),showCopyStatus(_0x18d17a(0x1a1));}catch(_0x3bd21e){promptInput['select'](),promptInput[_0x18d17a(0x18e)](0x0,promptInput['value'][_0x18d17a(0x215)]);const _0x2be74e=document[_0x18d17a(0x235)](_0x18d17a(0x218));showCopyStatus(_0x2be74e?_0x18d17a(0x1a1):_0x18d17a(0x1d2));}}function showCopyStatus(_0x3d2d33){const _0x3685c6=_0x5d14dc;copyStatusEl[_0x3685c6(0x22b)]=_0x3d2d33,clearTimeout(copyStatusTimer),copyStatusTimer=setTimeout(()=>{const _0x797290=_0x3685c6;copyStatusEl[_0x797290(0x22b)]='';},0x9c4);}function updateTierDescription(){const _0x2ce61b=_0x5d14dc,_0x2baffc=MODEL_TIERS[modelTierSelect[_0x2ce61b(0x18a)]]||MODEL_TIERS[_0x2ce61b(0x1e7)];tierDescriptionEl['textContent']=_0x2baffc[_0x2ce61b(0x1ac)],updateImpactLadder();}function updateImpactLadder(){const _0x3ad978=_0x5d14dc,_0x1533ae=Math[_0x3ad978(0x22c)](0x0,parseFloat(inputCostEl[_0x3ad978(0x18a)])||0x0),_0x5a9890=Math[_0x3ad978(0x22c)](0x0,parseFloat(outputCostEl[_0x3ad978(0x18a)])||0x0),_0x2e13bf=Math[_0x3ad978(0x22c)](0x1,parseInt(classSizeEl[_0x3ad978(0x18a)],0xa)||0x1),_0x19449c=Math[_0x3ad978(0x22c)](0x1,parseInt(promptsPerStudentEl[_0x3ad978(0x18a)],0xa)||0x1),_0x5e862f=MODEL_TIERS[modelTierSelect['value']]||MODEL_TIERS[_0x3ad978(0x1e7)];labelClassSizeEl['textContent']=_0x2e13bf['toLocaleString']();const _0x17b569=appState[_0x3ad978(0x210)]/0xf4240*_0x1533ae+appState['responseTokens']/0xf4240*_0x5a9890,_0x5a2e00=appState[_0x3ad978(0x210)]*_0x5e862f[_0x3ad978(0x1cc)]+appState['responseTokens']*_0x5e862f[_0x3ad978(0x1f6)],_0x5b2bba=_0x5a2e00*_0x5e862f['mlPerWh'],_0x5bb1b7={'you':_0x19449c,'class':_0x2e13bf*_0x19449c,'national':_0x2e13bf*_0x19449c*US_COLLEGES,'global':GLOBAL_AI_USERS};appState['impact']={},[_0x3ad978(0x1d9),_0x3ad978(0x233),_0x3ad978(0x1da),_0x3ad978(0x1df)][_0x3ad978(0x188)](_0xb9d950=>{const _0x3be43e=_0x3ad978,_0x1f1632=_0x5bb1b7[_0xb9d950],_0x2acf4e=_0x17b569*_0x1f1632,_0x3e8d35=_0x5a2e00*_0x1f1632,_0x3999d5=_0x5b2bba*_0x1f1632,_0x4ff4dd={'cost':formatMoney(_0x2acf4e,_0xb9d950==='you'),'energy':formatWh(_0x3e8d35),'energyEquiv':getEnergyEquiv(_0x3e8d35),'water':formatWater(_0x3999d5),'waterEquiv':getWaterEquiv(_0x3999d5)};appState[_0x3be43e(0x197)][_0xb9d950]=_0x4ff4dd,impactEls[_0xb9d950][_0x3be43e(0x232)]['textContent']=_0x4ff4dd['cost'],impactEls[_0xb9d950][_0x3be43e(0x199)][_0x3be43e(0x22b)]=_0x4ff4dd[_0x3be43e(0x199)],impactEls[_0xb9d950][_0x3be43e(0x1eb)][_0x3be43e(0x22b)]=_0x4ff4dd[_0x3be43e(0x1eb)],impactEls[_0xb9d950]['water']['textContent']=_0x4ff4dd[_0x3be43e(0x234)],impactEls[_0xb9d950][_0x3be43e(0x229)]['textContent']=_0x4ff4dd[_0x3be43e(0x229)];});}function _0x1b3c(_0x1e039f,_0x5230dc){_0x1e039f=_0x1e039f-0x174;const _0x1c2656=_0x1c26();let _0x1b3c1f=_0x1c2656[_0x1e039f];return _0x1b3c1f;}function validateAssignment(){const _0x188dbf=_0x5d14dc,_0x22007f=[];let _0x188e38=null;const _0xc70ce7=[{'el':studentNameEl,'label':_0x188dbf(0x1bb),'valid':studentNameEl['value'][_0x188dbf(0x1bd)]()['length']>0x0},{'el':sectionIdEl,'label':_0x188dbf(0x19a),'valid':sectionIdEl['value'][_0x188dbf(0x1bd)]()[_0x188dbf(0x215)]>0x0},{'el':promptInput,'label':_0x188dbf(0x1f9),'valid':promptInput[_0x188dbf(0x18a)][_0x188dbf(0x1bd)]()[_0x188dbf(0x215)]>0x0},{'el':responseInput,'label':_0x188dbf(0x17c),'valid':responseInput[_0x188dbf(0x18a)][_0x188dbf(0x1bd)]()['length']>0x0},{'el':classSizeEl,'label':_0x188dbf(0x1ea),'valid':parseInt(classSizeEl['value'],0xa)>=0x1}];_0xc70ce7[_0x188dbf(0x188)](_0x59caf5=>{const _0x5d9c37=_0x188dbf;if(!_0x59caf5[_0x5d9c37(0x1b8)]){_0x22007f[_0x5d9c37(0x23c)](_0x59caf5['label']);if(!_0x188e38)_0x188e38=_0x59caf5['el'];}});if(_0x22007f[_0x188dbf(0x215)]>0x0)return validationMsgEl['textContent']=_0x188dbf(0x17d)[_0x188dbf(0x194)](_0x22007f[_0x188dbf(0x190)](',\x20'),'.'),_0x188e38[_0x188dbf(0x1dc)](),![];return validationMsgEl[_0x188dbf(0x22b)]='',!![];}function sanitizeForPdf(_0x2b62b9){const _0x42d458=_0x5d14dc;return _0x2b62b9[_0x42d458(0x187)](/[\u2018\u2019]/g,'\x27')['replace'](/[\u201C\u201D]/g,'\x22')[_0x42d458(0x187)](/[\u2013\u2014]/g,'-')[_0x42d458(0x187)](/\u2026/g,_0x42d458(0x179))['replace'](/\u2022/g,'-')[_0x42d458(0x187)](/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g,'');}function generatePDF(){const _0x3d8025=_0x5d14dc;if(!validateAssignment())return;const _0x43db8e=new jsPDF({'unit':'pt','format':_0x3d8025(0x22a)}),_0x3508c1=_0x43db8e[_0x3d8025(0x1b9)][_0x3d8025(0x18f)][_0x3d8025(0x191)](),_0x2b6b9b=_0x43db8e[_0x3d8025(0x1b9)][_0x3d8025(0x18f)]['getHeight'](),_0x210aee=0x30,_0x2fc425=_0x2b6b9b-_0x210aee-0x12,_0xb0d5ee=_0x3508c1-_0x210aee*0x2;let _0x149eb4=_0x210aee;function _0x12979c(_0x9efa5){const _0x1e5841=_0x3d8025;_0x149eb4+_0x9efa5>_0x2fc425&&(_0x43db8e[_0x1e5841(0x20d)](),_0x149eb4=_0x210aee);}function _0x1c18a9(_0x40af47,_0x567f7e=0xa,_0x1d95ec=0xe){const _0x364684=_0x3d8025;_0x43db8e['setFont'](_0x364684(0x207),_0x364684(0x1c7)),_0x43db8e[_0x364684(0x19c)](_0x567f7e);const _0xd54d29=sanitizeForPdf(_0x40af47),_0x6ca9a2=_0x43db8e['splitTextToSize'](_0xd54d29,_0xb0d5ee);_0x6ca9a2[_0x364684(0x188)](_0x47f3c5=>{const _0xb1af25=_0x364684;_0x12979c(_0x1d95ec),_0x43db8e[_0xb1af25(0x18d)](_0x47f3c5,_0x210aee,_0x149eb4),_0x149eb4+=_0x1d95ec;});}_0x43db8e[_0x3d8025(0x19d)](0x0),_0x43db8e[_0x3d8025(0x22d)]('helvetica',_0x3d8025(0x224)),_0x43db8e[_0x3d8025(0x19c)](0x10),_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x1b1),_0x210aee,_0x149eb4),_0x149eb4+=0x16,_0x43db8e['setFont'](_0x3d8025(0x207),'normal'),_0x43db8e['setFontSize'](10.5);const _0x5861e0=sanitizeForPdf(studentNameEl['value'][_0x3d8025(0x1bd)]()),_0x261cad=sanitizeForPdf(sectionIdEl['value'][_0x3d8025(0x1bd)]()),_0x5780e7=new Date()[_0x3d8025(0x236)](),_0x55efe4=(MODEL_TIERS[modelTierSelect[_0x3d8025(0x18a)]]||MODEL_TIERS[_0x3d8025(0x1e7)])[_0x3d8025(0x21b)];_0x43db8e[_0x3d8025(0x18d)]('Student:\x20'[_0x3d8025(0x194)](_0x5861e0,_0x3d8025(0x1dd))[_0x3d8025(0x194)](_0x261cad),_0x210aee,_0x149eb4),_0x149eb4+=0xf,_0x43db8e['text'](_0x3d8025(0x1c5)[_0x3d8025(0x194)](_0x5780e7,_0x3d8025(0x1ca))[_0x3d8025(0x194)](_0x55efe4),_0x210aee,_0x149eb4),_0x149eb4+=0xc,_0x43db8e['setDrawColor'](0xb4),_0x43db8e[_0x3d8025(0x228)](_0x210aee,_0x149eb4,_0x3508c1-_0x210aee,_0x149eb4),_0x149eb4+=0x12,_0x43db8e[_0x3d8025(0x22d)](_0x3d8025(0x207),_0x3d8025(0x224)),_0x43db8e[_0x3d8025(0x19c)](0xc),_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x18c),_0x210aee,_0x149eb4),_0x149eb4+=0x10,_0x43db8e[_0x3d8025(0x22d)](_0x3d8025(0x207),_0x3d8025(0x1c7)),_0x43db8e[_0x3d8025(0x19c)](0xa);const _0x404748=appState[_0x3d8025(0x210)]+appState[_0x3d8025(0x1a9)],_0x16a8aa=parseFloat(inputCostEl[_0x3d8025(0x18a)]||0x0)[_0x3d8025(0x192)](0x2),_0x24fbba=parseFloat(outputCostEl['value']||0x0)[_0x3d8025(0x192)](0x2),_0x55bea4=parseInt(classSizeEl[_0x3d8025(0x18a)],0xa)||0x1,_0x36e8dc=parseInt(promptsPerStudentEl[_0x3d8025(0x18a)],0xa)||0x1;_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x1c4)[_0x3d8025(0x194)](appState[_0x3d8025(0x210)][_0x3d8025(0x236)](),_0x3d8025(0x239))[_0x3d8025(0x194)](appState[_0x3d8025(0x1a9)][_0x3d8025(0x236)](),_0x3d8025(0x1a4))['concat'](_0x404748[_0x3d8025(0x236)]()),_0x210aee,_0x149eb4),_0x149eb4+=0xf,_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x175)[_0x3d8025(0x194)](_0x16a8aa,_0x3d8025(0x181))[_0x3d8025(0x194)](_0x24fbba,'\x20/\x201M\x20output\x20\x20\x20|\x20\x20\x20Class\x20Size:\x20')['concat'](_0x55bea4,'\x20\x20\x20|\x20\x20\x20Prompts/Student:\x20')['concat'](_0x36e8dc),_0x210aee,_0x149eb4),_0x149eb4+=0x16,_0x43db8e[_0x3d8025(0x22d)]('helvetica',_0x3d8025(0x224)),_0x43db8e['setFontSize'](0xc),_0x43db8e['text'](_0x3d8025(0x20e),_0x210aee,_0x149eb4),_0x149eb4+=0x10;const _0x39b41c=[{'title':_0x3d8025(0x225),'data':appState[_0x3d8025(0x197)][_0x3d8025(0x1d9)]},{'title':'Your\x20Class\x20('['concat'](_0x55bea4,_0x3d8025(0x211)),'data':appState[_0x3d8025(0x197)][_0x3d8025(0x233)]},{'title':_0x3d8025(0x18b),'data':appState['impact'][_0x3d8025(0x1da)]},{'title':'Worldwide\x20(~1.2\x20Billion\x20AI\x20Users)','data':appState['impact'][_0x3d8025(0x1df)]}];_0x39b41c[_0x3d8025(0x188)](_0x33e2fe=>{const _0x21439f=_0x3d8025;_0x12979c(0x3a),_0x43db8e[_0x21439f(0x22d)]('helvetica',_0x21439f(0x224)),_0x43db8e[_0x21439f(0x19c)](10.5),_0x43db8e[_0x21439f(0x18d)](_0x33e2fe[_0x21439f(0x1af)],_0x210aee,_0x149eb4),_0x149eb4+=0xe,_0x43db8e[_0x21439f(0x22d)](_0x21439f(0x207),_0x21439f(0x1c7)),_0x43db8e[_0x21439f(0x19c)](9.5),_0x43db8e[_0x21439f(0x18d)](_0x21439f(0x1b2)['concat'](_0x33e2fe[_0x21439f(0x1d6)][_0x21439f(0x232)]),_0x210aee+0xc,_0x149eb4),_0x149eb4+=0xd,_0x43db8e['text'](_0x21439f(0x1c8)[_0x21439f(0x194)](_0x33e2fe[_0x21439f(0x1d6)]['energy'],'\x20')[_0x21439f(0x194)](_0x33e2fe[_0x21439f(0x1d6)][_0x21439f(0x1eb)]),_0x210aee+0xc,_0x149eb4),_0x149eb4+=0xd,_0x43db8e[_0x21439f(0x18d)](_0x21439f(0x216)[_0x21439f(0x194)](_0x33e2fe[_0x21439f(0x1d6)][_0x21439f(0x234)],'\x20')[_0x21439f(0x194)](_0x33e2fe[_0x21439f(0x1d6)][_0x21439f(0x229)]),_0x210aee+0xc,_0x149eb4),_0x149eb4+=0x10;}),_0x43db8e['setTextColor'](0x64),_0x43db8e[_0x3d8025(0x22d)](_0x3d8025(0x207),_0x3d8025(0x1e1)),_0x43db8e['setFontSize'](8.5);const _0x433990=_0x3d8025(0x1f4),_0xc012af=_0x43db8e[_0x3d8025(0x193)](_0x433990,_0xb0d5ee);_0xc012af['forEach'](_0x42d595=>{const _0x362b11=_0x3d8025;_0x12979c(0xb),_0x43db8e[_0x362b11(0x18d)](_0x42d595,_0x210aee,_0x149eb4),_0x149eb4+=0xb;}),_0x43db8e['setTextColor'](0x0),_0x149eb4+=0x8,_0x43db8e[_0x3d8025(0x1de)](0xb4),_0x43db8e['line'](_0x210aee,_0x149eb4,_0x3508c1-_0x210aee,_0x149eb4),_0x149eb4+=0x14,_0x12979c(0x24),_0x43db8e['setFont']('helvetica',_0x3d8025(0x224)),_0x43db8e['setFontSize'](0xc),_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x1f8),_0x210aee,_0x149eb4),_0x149eb4+=0x10,_0x1c18a9(promptInput[_0x3d8025(0x18a)][_0x3d8025(0x1bd)](),0xa,0xe),_0x149eb4+=0x10,_0x12979c(0x24),_0x43db8e[_0x3d8025(0x22d)](_0x3d8025(0x207),'bold'),_0x43db8e['setFontSize'](0xc),_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x17c),_0x210aee,_0x149eb4),_0x149eb4+=0x10,_0x1c18a9(responseInput[_0x3d8025(0x18a)][_0x3d8025(0x1bd)](),0xa,0xe);const _0x236b07=_0x43db8e[_0x3d8025(0x1fb)]();for(let _0x2fc3a8=0x1;_0x2fc3a8<=_0x236b07;_0x2fc3a8++){_0x43db8e[_0x3d8025(0x1e6)](_0x2fc3a8),_0x43db8e[_0x3d8025(0x22d)](_0x3d8025(0x207),_0x3d8025(0x1c7)),_0x43db8e[_0x3d8025(0x19c)](8.5),_0x43db8e[_0x3d8025(0x19d)](0x78),_0x43db8e[_0x3d8025(0x18d)](''[_0x3d8025(0x194)](_0x5861e0,_0x3d8025(0x184))['concat'](_0x261cad),_0x210aee,_0x2b6b9b-0x1a),_0x43db8e[_0x3d8025(0x18d)](_0x3d8025(0x1b3)[_0x3d8025(0x194)](_0x2fc3a8,_0x3d8025(0x1ed))[_0x3d8025(0x194)](_0x236b07),_0x3508c1-_0x210aee,_0x2b6b9b-0x1a,{'align':_0x3d8025(0x1be)});}const _0x638d7e=_0x5861e0[_0x3d8025(0x187)](/[^a-z0-9]+/gi,'_')[_0x3d8025(0x187)](/^_|_$/g,'');_0x43db8e[_0x3d8025(0x1e0)]('AI_Token_Impact_'['concat'](_0x638d7e||_0x3d8025(0x1ad),'.pdf'));}function formatMoney(_0x3b1e0b,_0x371a8c=![]){const _0xf6d8d0=_0x5d14dc;if(_0x3b1e0b===0x0)return _0x371a8c?'$0.00000':'$0.00';if(_0x371a8c&&_0x3b1e0b<0.01)return'$'+_0x3b1e0b[_0xf6d8d0(0x192)](0x5);return'$'+_0x3b1e0b[_0xf6d8d0(0x236)](undefined,{'minimumFractionDigits':0x2,'maximumFractionDigits':0x2});}function formatWh(_0xd6a87c){const _0x3f1cf3=_0x5d14dc;if(_0xd6a87c===0x0)return _0x3f1cf3(0x1f7);if(_0xd6a87c>=0x3b9aca00)return(_0xd6a87c/0x3b9aca00)[_0x3f1cf3(0x236)](undefined,{'maximumFractionDigits':0x2})+_0x3f1cf3(0x19e);if(_0xd6a87c>=0xf4240)return(_0xd6a87c/0xf4240)['toLocaleString'](undefined,{'maximumFractionDigits':0x1})+'\x20MWh';if(_0xd6a87c>=0x3e8)return(_0xd6a87c/0x3e8)[_0x3f1cf3(0x236)](undefined,{'maximumFractionDigits':0x1})+_0x3f1cf3(0x1b0);const _0x2af0e8=_0xd6a87c<0xa?0x2:_0xd6a87c<0x64?0x1:0x0;return _0xd6a87c['toLocaleString'](undefined,{'minimumFractionDigits':_0x2af0e8,'maximumFractionDigits':_0x2af0e8})+_0x3f1cf3(0x183);}function formatWater(_0x1c04b8){const _0x2be39e=_0x5d14dc;if(_0x1c04b8===0x0)return _0x2be39e(0x19b);if(_0x1c04b8>=0x3e8){const _0x5b3607=_0x1c04b8/0x3e8,_0x362c07=_0x5b3607<0xa?0x2:_0x5b3607<0x64?0x1:0x0;return _0x5b3607[_0x2be39e(0x236)](undefined,{'minimumFractionDigits':_0x362c07,'maximumFractionDigits':_0x362c07})+'\x20L';}const _0x291b44=_0x1c04b8<0xa?0x2:_0x1c04b8<0x64?0x1:0x0;return _0x1c04b8[_0x2be39e(0x236)](undefined,{'minimumFractionDigits':_0x291b44,'maximumFractionDigits':_0x291b44})+_0x2be39e(0x1f0);}function getEnergyEquiv(_0x559954){const _0x20a25d=_0x5d14dc;if(_0x559954<=0x0)return'';if(_0x559954<0xf){const _0x32757c=_0x559954/0xa*0x3c;if(_0x32757c<0x1)return'(~'[_0x20a25d(0x194)](Math['max'](0x1,Math[_0x20a25d(0x1b6)](_0x32757c*0x3c)),_0x20a25d(0x186));return'(~'[_0x20a25d(0x194)](_0x32757c['toFixed'](0x1),'\x20min\x20of\x20a\x2010W\x20LED\x20bulb)');}if(_0x559954<0x4b0){const _0x437f36=_0x559954/0xf;return'(~'[_0x20a25d(0x194)](_0x437f36[_0x20a25d(0x192)](0x1),'\x20smartphone\x20charges)');}if(_0x559954<0x7080){const _0x26f2fe=_0x559954/0x4b0;return'(~'[_0x20a25d(0x194)](_0x26f2fe['toLocaleString'](undefined,{'maximumFractionDigits':0x1}),_0x20a25d(0x177));}if(_0x559954<0xa06680){const _0x340909=_0x559954/0x7080;return'(~'[_0x20a25d(0x194)](_0x340909['toLocaleString'](undefined,{'maximumFractionDigits':0x1}),_0x20a25d(0x20f));}const _0x5cef8a=_0x559954/0xa06680;return'(~'[_0x20a25d(0x194)](_0x5cef8a[_0x20a25d(0x236)](undefined,{'maximumFractionDigits':0x1}),_0x20a25d(0x1e3));}function getWaterEquiv(_0x152863){const _0x13d007=_0x5d14dc;if(_0x152863<=0x0)return'';if(_0x152863<0x5){const _0x1fc63f=Math[_0x13d007(0x22c)](0x1,Math['round'](_0x152863*0x14));return'(~'[_0x13d007(0x194)](_0x1fc63f,_0x13d007(0x17a));}if(_0x152863<0x1f4){const _0xdf093b=_0x152863/4.92892;return'(~'[_0x13d007(0x194)](_0xdf093b[_0x13d007(0x192)](0x1),_0x13d007(0x196));}if(_0x152863<3785.41){const _0x589bea=_0x152863/0x1f4;return'(~'[_0x13d007(0x194)](_0x589bea[_0x13d007(0x192)](0x1),'\x20standard\x20water\x20bottles)');}if(_0x152863<0x9502f900){const _0x2bb01a=_0x152863/3785.41;return'(~'[_0x13d007(0x194)](_0x2bb01a[_0x13d007(0x236)](undefined,{'maximumFractionDigits':0x1}),_0x13d007(0x1d1));}const _0x7b81e0=_0x152863/0x9502f900;return'(~'['concat'](_0x7b81e0[_0x13d007(0x236)](undefined,{'maximumFractionDigits':0x1}),_0x13d007(0x1c9));}function getRandomPrompts(){const _0x1f2972=_0x5d14dc;return[_0x1f2972(0x200),'Write\x20a\x20polite\x20email\x20to\x20a\x20professor\x20asking\x20for\x20a\x2048-hour\x20extension\x20on\x20a\x20project\x20due\x20to\x20a\x20family\x20emergency.',_0x1f2972(0x1c2),_0x1f2972(0x237),_0x1f2972(0x1ab),_0x1f2972(0x1f5),_0x1f2972(0x205),_0x1f2972(0x214),_0x1f2972(0x1d4),_0x1f2972(0x1db),_0x1f2972(0x1a5),_0x1f2972(0x1a3),_0x1f2972(0x1a8),'Compare\x20renting\x20an\x20apartment\x20versus\x20buying\x20a\x20home\x20in\x20a\x20short\x20bulleted\x20list\x20of\x204\x20pros\x20and\x204\x20cons\x20for\x20each.',_0x1f2972(0x1ff),_0x1f2972(0x230),_0x1f2972(0x1a6),_0x1f2972(0x1ec),'Write\x20a\x20polite\x20text\x20message\x20to\x20a\x20roommate\x20asking\x20them\x20to\x20help\x20keep\x20the\x20kitchen\x20counter\x20clean.','List\x205\x20common\x20myths\x20about\x20sleep\x20and\x20briefly\x20explain\x20the\x20real\x20science\x20behind\x20each\x20one.','Create\x20a\x204-step\x20checklist\x20for\x20fact-checking\x20a\x20viral\x20news\x20story\x20on\x20social\x20media\x20before\x20sharing\x20it.',_0x1f2972(0x21c),_0x1f2972(0x1aa),_0x1f2972(0x1a2),_0x1f2972(0x176),_0x1f2972(0x22e),_0x1f2972(0x1e2),_0x1f2972(0x17f),_0x1f2972(0x221),_0x1f2972(0x178),'Explain\x20the\x20concept\x20of\x20compound\x20interest\x20using\x20a\x20simple\x20example\x20with\x20$100.','List\x205\x20essential\x20items\x20to\x20keep\x20in\x20a\x20car\x20emergency\x20kit\x20for\x20winter\x20driving\x20and\x20explain\x20why\x20each\x20matters.',_0x1f2972(0x182),'Give\x204\x20practical\x20strategies\x20for\x20taking\x20better\x20notes\x20during\x20a\x20fast-paced\x20college\x20lecture.','Explain\x20how\x20GPS\x20on\x20a\x20smartphone\x20knows\x20your\x20exact\x20location\x20in\x204\x20simple\x20sentences.','Write\x20a\x20short,\x20encouraging\x20pep\x20talk\x20for\x20someone\x20who\x20is\x20nervous\x20about\x20giving\x20their\x20first\x20public\x20speech.','Compare\x20solar\x20energy\x20and\x20wind\x20energy,\x20highlighting\x20two\x20advantages\x20and\x20two\x20challenges\x20of\x20each.',_0x1f2972(0x220),_0x1f2972(0x1c6),_0x1f2972(0x195)];}function setModels(){const _0x373c9d=_0x5d14dc;return{'small':{'label':_0x373c9d(0x1b5),'description':'Lower\x20energy\x20&\x20water\x20footprint\x20—\x20lightweight\x20models\x20built\x20for\x20speed\x20and\x20simple\x20tasks.','whPerInputToken':0.00005,'whPerOutputToken':0.0002,'mlPerWh':0x3},'standard':{'label':_0x373c9d(0x219),'description':_0x373c9d(0x238),'whPerInputToken':0.00025,'whPerOutputToken':0.0009,'mlPerWh':0x3},'reasoning':{'label':_0x373c9d(0x1c0),'description':_0x373c9d(0x1ee),'whPerInputToken':0.0005,'whPerOutputToken':0.003,'mlPerWh':0x3}};}function getImpactElements(){const _0x43db25=_0x5d14dc;return{'you':{'cost':document[_0x43db25(0x217)]('you-cost'),'energy':document[_0x43db25(0x217)](_0x43db25(0x21a)),'energyEquiv':document[_0x43db25(0x217)](_0x43db25(0x226)),'water':document[_0x43db25(0x217)](_0x43db25(0x1c1)),'waterEquiv':document[_0x43db25(0x217)]('you-water-equiv')},'class':{'cost':document['getElementById'](_0x43db25(0x223)),'energy':document[_0x43db25(0x217)](_0x43db25(0x1cd)),'energyEquiv':document['getElementById'](_0x43db25(0x23b)),'water':document[_0x43db25(0x217)]('class-water'),'waterEquiv':document[_0x43db25(0x217)](_0x43db25(0x1a7))},'national':{'cost':document[_0x43db25(0x217)]('national-cost'),'energy':document[_0x43db25(0x217)](_0x43db25(0x1fd)),'energyEquiv':document[_0x43db25(0x217)](_0x43db25(0x21d)),'water':document[_0x43db25(0x217)](_0x43db25(0x1d0)),'waterEquiv':document[_0x43db25(0x217)](_0x43db25(0x1cb))},'global':{'cost':document[_0x43db25(0x217)](_0x43db25(0x208)),'energy':document[_0x43db25(0x217)]('global-energy'),'energyEquiv':document['getElementById']('global-energy-equiv'),'water':document[_0x43db25(0x217)]('global-water'),'waterEquiv':document['getElementById'](_0x43db25(0x204))}};}
+  </script>
+
+</body>
+</html>
