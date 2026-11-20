@@ -1,10 +1,10 @@
 # AI Tokenization & Impact Calculator
 
-This repository hosts the production version of the **AI Tokenization & Impact Calculator**, an interactive single-page web tool built for general education *Introduction to AI* coursework. It allows students to visualize how large language models break text into tokens and estimate the financial, electricity, and water footprint of AI usage at scale.
+This repository hosts the **AI Tokenization & Impact Calculator**, an interactive single-page web tool built for general education *Introduction to AI* coursework. It allows students to visualize how large language models break text into tokens and estimate the financial, electricity, and water footprint of AI usage at scale.
 
 ## Live Student Link
 
-Hosted via GitHub Pages:  https://ksquires-brookdale.github.io/ai-impact-calculator/
+Hosted via GitHub Pages: https://ksquires-brookdale.github.io/ai-impact-calculator/
 
 ## Features
 
@@ -24,7 +24,7 @@ This repository contains both the readable source file and the live production f
 
 * **`comp119-token-impact.html`** — The readable development/source file.
 * **`index.html`** — The live production file served by GitHub Pages (with obfuscated JavaScript).
-* 
+  
 ## External Dependencies
 
 No build step or local package installation is required. The page loads two ES modules directly via `esm.sh`:
