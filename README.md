@@ -18,15 +18,13 @@ Hosted via GitHub Pages:  https://ksquires-brookdale.github.io/ai-impact-calcula
   4. **Worldwide** (single execution across ~1.2 billion global AI users)
 * **Assignment Export:** Validates required fields and generates a formatted, multi-page PDF report (with a browser Print fallback) for LMS submission.
 
-## Maintenance Workflow (Dev vs. Prod)
+## Project Files
 
-This repository stores **only the production file** with obfuscated JavaScript.
+This repository contains both the readable source file and the live production file hosted by GitHub Pages:
 
-1. Make and test edits locally in the readable development file (`ai-token-impact.dev.html`).
-2. Obfuscate the `<script>` block to produce the updated production file (`ai-token-impact.html`).
-3. Commit and push `ai-token-impact.html` to the `main` branch.
-4. GitHub Pages automatically redeploys the live site within 1–2 minutes.
-
+* **`comp119-token-impact.html`** — The readable development/source file.
+* **`index.html`** — The live production file served by GitHub Pages (with obfuscated JavaScript).
+* 
 ## External Dependencies
 
 No build step or local package installation is required. The page loads two ES modules directly via `esm.sh`:
