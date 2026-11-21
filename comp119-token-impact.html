@@ -156,6 +156,88 @@
         margin-bottom: 1rem;
       }
 
+      .io-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+        align-items: start;
+        column-gap: 1.25rem;
+      }
+
+      .io-row > div {
+        display: grid;
+        grid-template-rows: subgrid;
+        grid-row: span 2;
+      }
+
+      .token-breakdown h3 {
+        margin: 0 0 0.4rem 0;
+        align-self: end;      }
+
+      @media (max-width: 640px) {
+        .io-row {
+          grid-template-columns: 1fr;
+          row-gap: 1rem;
+        }
+
+        .io-row > div {
+          display: block;
+          grid-row: auto;
+        }
+      }
+
+      .token-controls {
+        margin-top: 0.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .token-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+      }
+
+      .token-stat {
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .token-stat-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+        margin-bottom: 0.2rem;
+      }
+
+      .token-stat strong {
+        font-size: 1.5rem;
+        line-height: 1.2;
+        color: #0f172a;
+      }
+
+      .token-stat-total {
+        background: #eff6ff;
+        border-color: #93c5fd;
+      }
+
+      .token-stat-total strong {
+        color: var(--accent);
+      }
+
+      @media (max-width: 640px) {
+        .token-summary {
+          grid-template-columns: 1fr;
+        }
+      }      
+
       #prompt-token-visual,
       #response-token-visual {
         background: var(--bg-subtle);
@@ -170,6 +252,21 @@
         word-break: break-word;
       }
 
+      #prompt-token-visual,
+      #response-token-visual {
+        overflow-y: auto;
+        resize: vertical;
+      }
+
+      #prompt-input,
+      #prompt-token-visual {
+        height: 140px;
+      }
+
+      #response-input,
+      #response-token-visual {
+        height: 210px;
+      }
       /* High-contrast cycling colors for JS-injected token chips */
       .token-chip {
         display: inline;
@@ -326,46 +423,73 @@
     <section aria-labelledby="io-heading">
       <h2 id="io-heading">1. Prompt &amp; AI Response</h2>
 
-      <!-- Prompt Area -->
-      <div>
+      <!-- Prompt Area  & Prompt Token Breakdown -->
+      <div class="io-row">
         <div>
-          <label for="prompt-input">Prompt:</label>
-          <button type="button" id="btn-random-prompt">Load Random Prompt</button>
-          <button type="button" id="btn-copy-prompt">Copy Prompt</button>
-          <span id="copy-status" role="status" aria-live="polite"></span>
+          <div>
+            <label for="prompt-input">Prompt:</label>
+            <button type="button" id="btn-random-prompt">Load Random Prompt</button>
+            <button type="button" id="btn-copy-prompt">Copy Prompt</button>
+            <span id="copy-status" role="status" aria-live="polite"></span>
+          </div>
+          <textarea id="prompt-input" name="prompt-input" rows="5" placeholder="Click 'Load Random Prompt' or type your own prompt here..."></textarea>
+          <!-- <p>Prompt Tokens: <strong id="prompt-token-count">0</strong></p> -->
         </div>
-        <textarea id="prompt-input" name="prompt-input" rows="5" placeholder="Click 'Load Random Prompt' or type your own prompt here..."></textarea>
-        <p>Prompt Tokens: <strong id="prompt-token-count">0</strong></p>
+
+        <div class="token-breakdown">
+          <h3>Prompt Token Breakdown</h3>
+          <div id="prompt-token-visual" aria-live="polite">
+            <!-- Color-coded token chips will be injected here -->
+          </div>
+        </div>
       </div>
 
-      <!-- Response Area -->
-      <div>
-        <label for="response-input">AI Response:</label>
-        <textarea id="response-input" name="response-input" rows="8" placeholder="Paste the AI's response here..."></textarea>
-        <p>Response Tokens: <strong id="response-token-count">0</strong></p>
+      <!-- Response Area and Response Token Breakdown -->
+      <div class="io-row">
+        <div>
+          <label for="response-input">AI Response:</label>
+          <textarea id="response-input" name="response-input" rows="8" placeholder="Paste the AI's response here..."></textarea>
+          <!-- <p>Response Tokens: <strong id="response-token-count">0</strong></p> -->
+        </div>
+
+        <div class="token-breakdown">
+          <h3>Response Token Breakdown</h3>
+          <div id="response-token-visual" aria-live="polite">
+            <!-- Color-coded token chips will be injected here -->
+          </div>
+        </div>
       </div>
 
       <!-- Combined Token Summary & Visualizer Controls -->
-      <div>
+      <!-- Visualizer Controls & Token Summary Bar -->
+      <div class="token-controls">
+        <input type="checkbox" id="toggle-token-ids" name="toggle-token-ids">
+        <label for="toggle-token-ids">Show numeric Token IDs instead of text chunks</label>
+      </div>
+
+      <div class="token-summary" aria-live="polite">
+        <div class="token-stat">
+          <span class="token-stat-label">Prompt Tokens</span>
+          <strong id="prompt-token-count">0</strong>
+        </div>
+        <div class="token-stat">
+          <span class="token-stat-label">Response Tokens</span>
+          <strong id="response-token-count">0</strong>
+        </div>
+        <div class="token-stat token-stat-total">
+          <span class="token-stat-label">Total Tokens</span>
+          <strong id="total-token-count">0</strong>
+        </div>
+      </div>
+
+      <!-- <div>
         <p>Total Tokens (Prompt + Response): <strong id="total-token-count">0</strong></p>
         <div>
           <input type="checkbox" id="toggle-token-ids" name="toggle-token-ids">
           <label for="toggle-token-ids">Show numeric Token IDs instead of text chunks</label>
         </div>
-      </div>
+      </div> -->
 
-      <!-- Visual Token Breakdown Containers -->
-      <div>
-        <h3>Prompt Token Breakdown</h3>
-        <div id="prompt-token-visual" aria-live="polite">
-          <!-- Color-coded token chips will be injected here -->
-        </div>
-
-        <h3>Response Token Breakdown</h3>
-        <div id="response-token-visual" aria-live="polite">
-          <!-- Color-coded token chips will be injected here -->
-        </div>
-      </div>
     </section>
 
     <!-- 2. Pricing, Model & Scale Settings -->
@@ -560,6 +684,11 @@
 
 
     // ----------------------------------------------------------------------------
+
+    //Syncrhoize prompt and token boxes
+    syncHeights(promptInput, promptVisualEl);
+    syncHeights(responseInput, responseVisualEl);
+
     //Initialize on page load
     updateTierDescription();    
     
@@ -1144,6 +1273,34 @@
           }
       };
     }
+
+    // ============================================================================
+    // ============================================================================
+    // --- Sync heights when either promt/response box or token box are resized ---
+    function syncHeights(elA, elB) {
+      let isSyncing = false;
+
+      const observer = new ResizeObserver(entries => {
+        if (isSyncing) return;
+        isSyncing = true;
+
+        for (const entry of entries) {
+          const other = entry.target === elA ? elB : elA;
+          const newHeight = entry.target.offsetHeight;
+
+          if (Math.abs(other.offsetHeight - newHeight) > 1) {
+            other.style.height = `${newHeight}px`;
+          }
+        }
+
+        requestAnimationFrame(() => {
+          isSyncing = false;
+        });
+      });
+
+      observer.observe(elA);
+      observer.observe(elB);
+    }    
   </script>
 
 </body>
