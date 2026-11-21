@@ -29,11 +29,19 @@ This repository contains both the readable source file and the live production f
 
 No build step or local package installation is required. The page loads two ES modules directly via `esm.sh`:
 
-* `gpt-tokenizer` — Client-side BPE tokenization (`encode` / `decode`)
-* `jspdf` — Client-side PDF generation
+* `gpt-tokenizer` (MIT License) — Client-side BPE tokenization (`encode` / `decode`)
+* `jspdf` (MIT License) — Client-side PDF generation
 
 ## Estimation Baselines
 
 * **U.S. Higher Education:** 3,800 degree-granting colleges and universities (NCES IPEDS).
 * **Global AI Users:** ~1.2 billion users (conservative standalone AI app user estimate), modeled as a single execution of the submitted prompt.
 * **Energy & Water:** Educational estimates derived from published per-token inference benchmarks, scaled automatically across units (`Wh`–`GWh`, `mL`–`L`).
+
+## License & Attribution
+
+**Copyright © 2026 Kevin Squires**
+
+This work is licensed under a [Creative Commons Attribution–NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/). You are free to share and adapt this material for non-commercial purposes, provided you give appropriate credit, provide a link to the license, and indicate if changes were made.
+
+**AI Assistance:** Engineered with coding and layout assistance from Google Gemini.
