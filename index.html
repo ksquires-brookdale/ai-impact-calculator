@@ -510,15 +510,6 @@
           <strong id="total-token-count">0</strong>
         </div>
       </div>
-
-      <!-- <div>
-        <p>Total Tokens (Prompt + Response): <strong id="total-token-count">0</strong></p>
-        <div>
-          <input type="checkbox" id="toggle-token-ids" name="toggle-token-ids">
-          <label for="toggle-token-ids">Show numeric Token IDs instead of text chunks</label>
-        </div>
-      </div> -->
-
     </section>
 
     <!-- 2. Pricing, Model & Scale Settings -->
@@ -542,8 +533,8 @@
         <div>
           <label for="model-tier">AI Model Tier:</label>
           <select id="model-tier" name="model-tier" aria-describedby="tier-description">
-            <option value="small">Small / Fast Model</option>
-            <option value="standard" selected>Standard Frontier Model</option>
+            <option value="small" selected>Small / Fast Model</option>
+            <option value="standard">Standard Frontier Model</option>
             <option value="reasoning">Heavy Reasoning Model</option>
           </select>
           <p id="tier-description" aria-live="polite">
